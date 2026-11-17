@@ -1,0 +1,107 @@
+From 876e80e303d1f1c99d16b38c818e5809ac3050ea Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Sun, 8 Nov 2026 20:55:34 +0200
+Subject: [PATCH 05/13] Compositor hooks: composited node set,
+ compositor_animations(), markers around composited elements painted at full
+ opacity
+
+---
+ packages/blitz-dom/src/document.rs |  3 +++
+ packages/blitz-dom/src/stylo.rs    | 28 ++++++++++++++++++++++++++++
+ packages/blitz-paint/src/render.rs | 16 ++++++++++++++--
+ 3 files changed, 45 insertions(+), 2 deletions(-)
+
+diff --git a/packages/blitz-dom/src/document.rs b/packages/blitz-dom/src/document.rs
+index 5e334b8..1de1b08 100644
+--- a/packages/blitz-dom/src/document.rs
++++ b/packages/blitz-dom/src/document.rs
+@@ -375,6 +375,8 @@ pub struct BaseDocument {
+     // TODO: collapse animating state into a bitflags
+     /// Whether there are active CSS animations/transitions (so we should re-render every frame)
+     pub(crate) has_active_animations: bool,
++    /// webui-lab: elements the embedder composites on its own (painted between composited markers, at full opacity).
++    pub composited: HashSet<NodeId>,
+     /// Whether there is a `<canvas>` element in the DOM (so we should re-render every frame)
+     pub(crate) has_canvas: bool,
+     /// Whether there are subdocuments that are animating (so we should re-render every frame)
+@@ -562,6 +564,7 @@ impl BaseDocument {
+             active_node_id: None,
+             mousedown_node_id: None,
+             has_active_animations: false,
++            composited: HashSet::new(),
+             subdoc_is_animating: false,
+             has_canvas: false,
+             sub_document_nodes: HashSet::new(),
+diff --git a/packages/blitz-dom/src/stylo.rs b/packages/blitz-dom/src/stylo.rs
+index 04e2511..0602a3a 100644
+--- a/packages/blitz-dom/src/stylo.rs
++++ b/packages/blitz-dom/src/stylo.rs
+@@ -1620,3 +1620,31 @@ fn parse_inline() {
+ 
+     // let val = CSSInlineStyleDeclaration();
+ }
++
++impl crate::BaseDocument {
++    /// webui-lab: the elements whose animations and transitions are running, when every one of them animates only
++    /// properties a compositor can apply (transform, translate, rotate, scale, opacity); None when anything else
++    /// animates (the page must be painted again then).
++    pub fn compositor_animations(&self, now: f64) -> Option<Vec<NodeId>> {
++        use style::properties::{LonghandId, PropertyDeclarationId};
++        let compositable = |id: PropertyDeclarationId| matches!(id,
++            PropertyDeclarationId::Longhand(LonghandId::Transform | LonghandId::Translate | LonghandId::Rotate
++                | LonghandId::Scale | LonghandId::Opacity));
++        let sets = self.animations.sets.read();
++        let mut nodes = Vec::new();
++        for (key, set) in sets.iter() {
++            if !set.needs_animation_ticks() { continue; }
++            if key.pseudo_element.is_some() { return None; }
++            for t in &set.transitions {
++                if !compositable(t.property_animation.property_id()) { return None; }
++            }
++            if set.has_active_animation() {
++                let map = set.get_value_map_for_active_animations(now)?;
++                if !map.keys().all(|k| compositable(k.as_borrowed())) { return None; }
++            }
++            nodes.push(NodeId::from_u64(key.node.id() as u64));
++        }
++        Some(nodes)
++    }
++}
++
+diff --git a/packages/blitz-paint/src/render.rs b/packages/blitz-paint/src/render.rs
+index 23c1009..e0e73c2 100644
+--- a/packages/blitz-paint/src/render.rs
++++ b/packages/blitz-paint/src/render.rs
+@@ -436,7 +436,10 @@ impl<'dom, 'a> BlitzDomPainter<'dom, 'a> {
+         }
+ 
+         let effects = styles.get_effects();
+-        let opacity = effects.opacity;
++        // webui-lab: a composited element is painted at full opacity (even when it is fading in from nothing): the
++        // embedder applies its opacity as it composites it.
++        let composited = self.dom.as_ref().composited.contains(&node_id);
++        let opacity = if composited { 1.0 } else { effects.opacity };
+         if opacity == 0.0 {
+             return;
+         }
+@@ -732,7 +735,16 @@ impl<'dom, 'a> BlitzDomPainter<'dom, 'a> {
+ 
+         match &node.data {
+             NodeData::Element(_) | NodeData::AnonymousBlock(_) => {
+-                self.render_element(scene, node_id, parent_style_transform, clip_rect)
++                // webui-lab: an element the embedder composites on its own is marked, with its world transform and
++                // its own CSS transform as painted, so it can be moved and faded without painting again.
++                let composited = self.dom.as_ref().composited.contains(&node_id);
++                if composited {
++                    let world = self.node_transform(node, parent_style_transform);
++                    let local = node.transform().as_deref().copied().unwrap_or_default();
++                    scene.composited_begin(node_id.as_u64(), world, local);
++                }
++                self.render_element(scene, node_id, parent_style_transform, clip_rect);
++                if composited { scene.composited_end(); }
+             }
+             NodeData::Text(TextNodeData { .. }) => {
+                 // Text nodes should never be rendered directly
+-- 
+2.50.1 (Apple Git-155)
+

@@ -1,0 +1,79 @@
+From 814b57007326eb6bc4b3fc4b5795e5112aa3914b Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Mon, 9 Nov 2026 02:09:46 +0200
+Subject: [PATCH 5/7] Group: a shared recorded piece (retained painting)
+
+---
+ crates/anyrender/src/lib.rs       | 10 ++++++++++
+ crates/anyrender/src/recording.rs | 13 +++++++++++++
+ 2 files changed, 23 insertions(+)
+
+diff --git a/crates/anyrender/src/lib.rs b/crates/anyrender/src/lib.rs
+index 09916d5..455914d 100644
+--- a/crates/anyrender/src/lib.rs
++++ b/crates/anyrender/src/lib.rs
+@@ -275,6 +275,12 @@ pub trait PaintScene: RenderContext {
+ 
+     // --- Provided methods
+ 
++    /// webui-lab: appends a shared recorded piece (`RenderCommand::Group`). A recording keeps the reference; other
++    /// painters draw its commands.
++    fn append_group(&mut self, group: &std::sync::Arc<Vec<RenderCommand>>) {
++        self.append_scene(Scene { tolerance: 0.1, commands: (**group).clone() }, Affine::IDENTITY);
++    }
++
+     /// Append a recorded Scene Fragment to the current scene
+     fn append_scene(&mut self, scene: Scene, scene_transform: Affine) {
+         for cmd in scene.commands {
+@@ -296,6 +302,10 @@ pub trait PaintScene: RenderContext {
+                 RenderCommand::CompositedEnd => self.composited_end(),
+                 RenderCommand::ScrollBegin(cmd) => self.scroll_begin(cmd.id, cmd.offset, scene_transform.transform_rect_bbox(cmd.clip)),
+                 RenderCommand::ScrollEnd => self.scroll_end(),
++                RenderCommand::Group(g) => {
++                    if scene_transform == Affine::IDENTITY { self.append_group(&g) }
++                    else { self.append_scene(Scene { tolerance: 0.1, commands: (*g).clone() }, scene_transform) }
++                }
+                 RenderCommand::Stroke(cmd) => self.stroke(
+                     &cmd.style,
+                     scene_transform * cmd.transform,
+diff --git a/crates/anyrender/src/recording.rs b/crates/anyrender/src/recording.rs
+index 5296478..c438811 100644
+--- a/crates/anyrender/src/recording.rs
++++ b/crates/anyrender/src/recording.rs
+@@ -40,6 +40,10 @@ pub enum RenderCommand<Font = FontData, Brush = Paint> {
+     ScrollBegin(ScrollCommand),
+     /// webui-lab: the end of a scroll container's content.
+     ScrollEnd,
++    /// webui-lab: a recorded piece shared between recordings (an element painted earlier and unchanged since): the
++    /// same commands as if they were here. Painters may keep what they made of it by its address.
++    #[cfg_attr(feature = "serde", serde(skip))]
++    Group(Arc<Vec<RenderCommand<Font, Brush>>>),
+ }
+ 
+ /// webui-lab: a scroll container whose content is painted unscrolled: its node id, its scroll offset when painted (device
+@@ -77,6 +81,11 @@ impl RenderCommand {
+             RenderCommand::CompositedEnd => {}
+             RenderCommand::ScrollBegin(cmd) => cmd.clip = transform.transform_rect_bbox(cmd.clip),
+             RenderCommand::ScrollEnd => {}
++            RenderCommand::Group(g) => {
++                if transform != Affine::IDENTITY {
++                    *g = Arc::new(g.iter().cloned().map(|c| c.apply_transform(transform)).collect());
++                }
++            }
+         };
+ 
+         self
+@@ -210,6 +219,10 @@ impl Scene {
+ 
+ impl RenderContext for Scene {}
+ impl PaintScene for Scene {
++    fn append_group(&mut self, group: &Arc<Vec<RenderCommand>>) {
++        self.commands.push(RenderCommand::Group(group.clone()));
++    }
++
+     fn reset(&mut self) {
+         self.commands.clear()
+     }
+-- 
+2.50.1 (Apple Git-155)
+

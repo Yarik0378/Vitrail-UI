@@ -1,0 +1,29 @@
+From 239dbe74753fcb96348f42321a5a89244ef1e585 Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Sun, 8 Nov 2026 19:37:43 +0200
+Subject: [PATCH 03/13] Images: a game texture's placeholder is never
+ downscaled (the bridge must recognise its marker)
+
+---
+ packages/blitz-paint/src/render.rs | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/packages/blitz-paint/src/render.rs b/packages/blitz-paint/src/render.rs
+index e7cd68c..1959ccb 100644
+--- a/packages/blitz-paint/src/render.rs
++++ b/packages/blitz-paint/src/render.rs
+@@ -1415,7 +1415,10 @@ impl ElementCx<'_, '_> {
+                     // webui-lab: an image drawn much smaller than it is gets an area-averaged copy at its drawn size
+                     // (as Chrome's mipmapped filtering does); plain bilinear sampling of a 128px icon at 24px sparkles.
+                     let (tw, th) = (paint_size.width.round() as u32, paint_size.height.round() as u32);
+-                    if tw > 0 && th > 0 && (tw as f32) < image.width as f32 * 0.75 && (th as f32) < image.height as f32 * 0.75 {
++                    // A game texture's placeholder (the webui bridge marks it in its first pixel) is drawn as it is:
++                    // the GPU painter puts the texture in its place and must recognise it.
++                    let placeholder = image.data.data().get(0..4) == Some(&[0x57, 0x45, 0x42, 0x00][..]);
++                    if !placeholder && tw > 0 && th > 0 && (tw as f32) < image.width as f32 * 0.75 && (th as f32) < image.height as f32 * 0.75 {
+                         let small = downscaled(image, tw, th, quality);
+                         let t = self.transform.pre_translate(Vec2 { x, y })
+                             .pre_scale_non_uniform(paint_size.width as f64 / tw as f64, paint_size.height as f64 / th as f64);
+-- 
+2.50.1 (Apple Git-155)
+

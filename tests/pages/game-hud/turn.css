@@ -1,0 +1,80 @@
+/* The turn's panel, in the top bar's look (topbar.css): dark-teal glass, a sea-green edge, a ring with copper ticks,
+   cream text. Sizes are CSS px; the game scales the page with its HUD and puts it in the screen's bottom-right corner. */
+@font-face { font-family: GameSans; src: url(fonts/AlegreyaSans-Medium.ttf); font-weight: 500; }
+@font-face { font-family: GameSans; src: url(fonts/AlegreyaSans-Bold.ttf); font-weight: 700; }
+
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+body { position: relative; width: 100%; height: 100%; font: 700 16px/1 GameSans; color: #f6eedc;
+  font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum" 1, "tnum" 1; }
+
+/* The panel sits at the page's bottom-right; the room above it is for the hints. */
+.panel { position: absolute; right: 10px; bottom: 10px; width: 224px; box-sizing: border-box; padding: 14px 12px 20px;
+  display: flex; flex-direction: column; align-items: center; border-radius: 12px;
+  background: linear-gradient(rgba(42, 74, 67, .86), rgba(27, 54, 47, .86) 12%, rgba(18, 39, 34, .88) 55%, rgba(10, 24, 21, .9));
+  backdrop-filter: blur(3px) saturate(.9);
+  box-shadow: inset 0 0 0 1px #0c0b0a, inset 0 0 0 2px rgba(111, 148, 136, .6), inset 0 3px 0 0 rgba(255, 255, 255, .05),
+    0 6px 12px rgba(0, 0, 0, .5); }
+/* The sea-green line along the bottom, as under the top bar. */
+.panel::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 6px; height: 1px;
+  background: linear-gradient(90deg, transparent, #6f9488 18%, #4e7068 50%, #6f9488 82%, transparent); }
+
+.title { font-size: 27px; letter-spacing: .3px; }
+.season { margin-top: 5px; font: 500 14px/1.2 GameSans; color: #b9bea9; cursor: pointer; }
+.season:hover { color: #f6eedc; }
+
+/* The dial: the turn's button. */
+.dial { position: relative; width: 136px; height: 136px; margin: 12px 0 10px; border-radius: 50%; cursor: pointer;
+  background: radial-gradient(circle at 50% 32%, rgba(32, 58, 52, .96), rgba(12, 24, 21, .97) 70%);
+  box-shadow: inset 0 0 0 2px #110f0e, inset 0 0 0 3px #5b7d74, inset 0 4px 8px rgba(0, 0, 0, .7), 0 3px 6px rgba(0, 0, 0, .5); }
+.dial:hover { box-shadow: inset 0 0 0 2px #110f0e, inset 0 0 0 3px #8fb7aa, inset 0 4px 8px rgba(0, 0, 0, .7),
+  0 3px 6px rgba(0, 0, 0, .5), 0 0 12px rgba(143, 183, 170, .35); }
+/* Copper ticks round the rim, a turn's worth of a year apart. */
+.dial::before { content: ""; position: absolute; inset: 4px; border-radius: 50%;
+  background: repeating-conic-gradient(from -.75deg, rgba(214, 152, 96, .55) 0 1.5deg, transparent 1.5deg 30deg);
+  mask: radial-gradient(circle, transparent 54.5px, #000 55px, #000 59px, transparent 59.5px); }
+/* The year's ring: each season's arc as long as the season (the game sets the gradient), the current one bright. */
+.seasons { position: absolute; inset: 4px; border-radius: 50%;
+  background: conic-gradient(#8cc46a 0 27%, transparent 27% 28%, rgba(233, 189, 92, .35) 28% 55%, transparent 55% 56%,
+    rgba(217, 130, 59, .35) 56% 83%, transparent 83% 84%, rgba(169, 198, 220, .35) 84% 99%, transparent 99%);
+  mask: radial-gradient(circle, transparent 49.5px, #000 50px, #000 53.5px, transparent 54px); }
+/* The turn's mark and the winter's warning ride the ring: turned by the game. */
+.spin { position: absolute; inset: 4px; }
+.mark { position: absolute; left: 58px; top: 6.25px; width: 12px; height: 12px; border-radius: 50%; background: #fff6dc;
+  box-shadow: 0 0 0 1.5px #3c3322, 0 1px 3px rgba(0, 0, 0, .6); }
+#warn { display: none; }
+#warn.on { display: block; }
+.warn { position: absolute; left: 58.5px; top: 6.75px; width: 11px; height: 11px; border-radius: 50%; background: #e4583c;
+  box-shadow: 0 0 0 1.5px #3a120c, 0 0 6px rgba(228, 88, 60, .6); }
+
+/* The middle: an arrow, or the picture of what the turn asks for first in a breathing copper ring. */
+.core { position: absolute; inset: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 35%, #24443c, #142a25 72%);
+  box-shadow: inset 0 0 0 1px #0c1816, inset 0 0 0 2px rgba(143, 183, 170, .5), 0 0 0 1px rgba(0, 0, 0, .55),
+    inset 0 -6px 10px rgba(0, 0, 0, .35); }
+.arrow { width: 38px; height: 38px; fill: none; stroke: #f2dcb8; stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round; }
+.dial:hover .arrow { stroke: #fff4dc; }
+.icon { display: none; width: 42px; height: 42px; }
+.glow { display: none; position: absolute; inset: 0; border-radius: 50%;
+  box-shadow: inset 0 0 0 2px #8fb7aa, 0 0 10px rgba(143, 183, 170, .45);
+  animation: breathe 2.6s ease-in-out infinite alternate; }
+.ask .arrow { display: none; }
+.ask .icon, .ask .glow { display: block; }
+.ask .icon { width: 50px; height: 50px; }
+.ask .icon.unit { width: 56px; height: 56px; transform: translateX(2px); }
+@keyframes breathe { from { opacity: .35; } to { opacity: 1; } }
+
+.caption { font-size: 18px; line-height: 1.15; text-align: center; max-width: 200px; }
+.warm .caption { color: #f2c48a; }
+.skip { display: none; margin-top: 6px; font: 500 14px/1.2 GameSans; color: #dfe2d0; padding-bottom: 1px;
+  border-bottom: 1px solid #8fb7aa; cursor: pointer; }
+.skip:hover { color: #f6eedc; border-bottom-color: #f6eedc; }
+.enter { margin-top: 6px; font: 500 12px/1 GameSans; color: #7f9089; letter-spacing: .5px; }
+/* «Все одно завершити» only when the turn asks for something it can go without (not while waiting). */
+.warm .skip { display: block; }
+.warm .enter { display: none; }
+
+/* Hints above the panel (the game's look: dark enamel, thin light edge). */
+.tip { display: none; position: absolute; right: 0; bottom: calc(100% + 8px); width: 240px; box-sizing: border-box;
+  white-space: pre-line; padding: 7px 10px; border-radius: 8px; background: rgba(18, 34, 30, .96); border: 1px solid #4e7068;
+  font: 500 13px/1.35 GameSans; color: #e6e2cf; text-align: left; box-shadow: 0 6px 14px rgba(0, 0, 0, .45); }
+.season:hover .tip, .dial:hover + .tip { display: block; }

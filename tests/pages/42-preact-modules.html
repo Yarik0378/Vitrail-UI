@@ -1,0 +1,35 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- ES modules: Preact's module builds by bare name through an import map, a relative module, a JSON import, and
+     top-level await. -->
+<style>
+  body { margin: 0; font: 16px/1.3 sans-serif; color: #f6eedc; background: #122722; }
+  .app { padding: 16px; display: flex; flex-direction: column; gap: 10px; width: 360px; }
+  .res { display: flex; gap: 12px; }
+  .cell { padding: 4px 8px; border-radius: 6px; background: #1b362f; }
+  .cell.low { background: #5a2a20; }
+</style>
+<script type="importmap">
+{ "imports": { "preact": "./vendor/preact-10.29.8.mjs", "preact/hooks": "./vendor/preact-hooks-10.29.8.mjs", "htm": "./vendor/htm-3.1.1.mjs" } }
+</script>
+</head>
+<body>
+<div id="root"></div>
+<script type="module">
+  import { render } from 'preact';
+  import { useState } from 'preact/hooks';
+  import { html, Cell } from './42-modules/cells.js';
+  import stock from './42-modules/stock.json' with { type: 'json' };
+  window.engine ??= { on() {}, off() {}, trigger() {} };
+  const ready = await Promise.resolve('awaited');
+  function App() {
+    const [s] = useState(stock);
+    return html`<div class="app">
+      <div id="title" style=${{ fontSize: '24px', fontWeight: 'bold' }}>Stock (${ready})</div>
+      <div class="res">${Object.entries(s).map(([k, v]) => html`<${Cell} key=${k} name=${k} value=${v} />`)}</div>
+    </div>`;
+  }
+  render(html`<${App} />`, document.getElementById('root'));
+  engine.trigger('modules', Object.keys(stock).length);
+</script>
+</body></html>

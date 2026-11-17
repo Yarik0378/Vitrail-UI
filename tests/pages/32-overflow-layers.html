@@ -1,0 +1,23 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- Glass (backdrop-filter) and opacity don't clip what overflows the element: a badge sticking out of a round glass
+     medallion with a soft shadow, and a child hanging out of a faded card (Chrome paints both whole). -->
+<style>
+html, body { margin: 0; }
+body { width: 520px; height: 200px; background: linear-gradient(90deg, #6d8a4a, #c9b98a 50%, #3f6a7a); font: 700 14px sans-serif; }
+.row { display: flex; gap: 40px; padding: 40px; }
+.ring { position: relative; width: 80px; height: 80px; border-radius: 50%; background: rgba(20, 28, 20, .55);
+  backdrop-filter: blur(6px); box-shadow: 0 8px 20px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(255, 255, 255, .3); }
+.badge { position: absolute; right: -8px; top: -8px; width: 26px; height: 26px; border-radius: 50%; background: #e2b866;
+  box-shadow: 0 0 0 2px #1d241f; }
+.card { position: relative; width: 140px; height: 90px; border-radius: 12px; background: #2b3a2b; opacity: .7; }
+.hang { position: absolute; left: 90px; top: 50px; width: 90px; height: 60px; border-radius: 10px; background: #c9814f; }
+.both { position: relative; width: 90px; height: 90px; border-radius: 16px; background: rgba(255, 255, 255, .2);
+  backdrop-filter: blur(4px); opacity: .8; }
+.both .hang { left: 50px; top: -20px; width: 60px; height: 40px; }
+</style></head>
+<body><div class="row">
+  <div class="ring"><div class="badge"></div></div>
+  <div class="card"><div class="hang"></div></div>
+  <div class="both"><div class="hang"></div></div>
+</div></body></html>

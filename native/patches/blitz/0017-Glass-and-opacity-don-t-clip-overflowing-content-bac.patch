@@ -1,0 +1,126 @@
+From fda8f09363e817dd48105089b038305627ba79f0 Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Mon, 9 Nov 2026 14:01:15 +0200
+Subject: [PATCH] Glass and opacity don't clip overflowing content:
+ backdrop-filter is its own empty layer in the rounded border box, opacity
+ layers reach past the element
+
+---
+ Cargo.lock                         | 40 +++++++++++++++---------------
+ packages/blitz-paint/src/render.rs | 31 +++++++++++++++++------
+ 2 files changed, 43 insertions(+), 28 deletions(-)
+
+diff --git a/Cargo.lock b/Cargo.lock
+index 6e49c03..85e235d 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -9301,6 +9301,26 @@ version = "0.9.5"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
+ 
++[[package]]
++name = "vitrail"
++version = "0.1.0"
++dependencies = [
++ "anyrender",
++ "anyrender_vello_cpu",
++ "blitz-dom",
++ "blitz-html",
++ "blitz-paint",
++ "blitz-traits",
++ "image",
++ "keyboard-types",
++ "lyon_tessellation",
++ "peniko",
++ "png 0.18.1",
++ "rquickjs",
++ "skrifa",
++ "smol_str",
++]
++
+ [[package]]
+ name = "void"
+ version = "1.0.2"
+@@ -9641,26 +9661,6 @@ dependencies = [
+  "rustls-pki-types",
+ ]
+ 
+-[[package]]
+-name = "vitrail"
+-version = "0.1.0"
+-dependencies = [
+- "anyrender",
+- "anyrender_vello_cpu",
+- "blitz-dom",
+- "blitz-html",
+- "blitz-paint",
+- "blitz-traits",
+- "image",
+- "keyboard-types",
+- "lyon_tessellation",
+- "peniko",
+- "png 0.18.1",
+- "rquickjs",
+- "skrifa",
+- "smol_str",
+-]
+-
+ [[package]]
+ name = "weezl"
+ version = "0.1.12"
+diff --git a/packages/blitz-paint/src/render.rs b/packages/blitz-paint/src/render.rs
+index cf947f3..c541dd3 100644
+--- a/packages/blitz-paint/src/render.rs
++++ b/packages/blitz-paint/src/render.rs
+@@ -680,25 +680,40 @@ impl<'dom, 'a> BlitzDomPainter<'dom, 'a> {
+                 effect_layer_clip.y0 += filter_expansion_area.y0;
+                 effect_layer_clip.x1 += filter_expansion_area.x1;
+                 effect_layer_clip.y1 += filter_expansion_area.y1;
+-                // vitrail-ui: a backdrop-filter shows through the element's rounded border box (as in Chrome), so
+-                // without a filter widening the layer, the layer is clipped to that shape rather than its bounds.
+-                let effect_layer_shape: kurbo::BezPath = if backdrop_filter.is_some() && filter.is_none() {
+-                    cx.frame.border_box_path()
+-                } else {
++                // vitrail-ui: a backdrop-filter shows through the element's rounded border box (as in Chrome) and
++                // clips nothing else: it is a layer of its own, empty, in that shape (faded with the element), and the
++                // element's content, children overflowing it included, is painted after it unclipped.
++                if let Some(backdrop) = backdrop_filter {
++                    self.layer_manager.maybe_with_layer(
++                        scene,
++                        true,
++                        BlendMode::default(),
++                        opacity,
++                        cx.transform,
++                        &cx.frame.border_box_path(),
++                        None,
++                        Some(backdrop),
++                        |_scene| {},
++                    );
++                }
++                // vitrail-ui: opacity doesn't clip either (Chrome lets children overflow a faded element): without a
++                // filter the layer reaches far round the element; a filter keeps its processing region.
++                let effect_layer_shape: kurbo::BezPath = if filter.is_some() {
+                     effect_layer_clip.to_path(0.1)
++                } else {
++                    cx.frame.border_box_path().bounding_box().inflate(8192.0, 8192.0).to_path(0.1)
+                 };
+ 
+                 // Opacity/Filter layer if box has opacity or a filter.
+-                // Clipped to border-box as it needs to include the background and borders.
+                 self.layer_manager.maybe_with_layer(
+                     scene,
+-                    has_opacity || filter.is_some() || backdrop_filter.is_some(),
++                    has_opacity || filter.is_some(),
+                     BlendMode::default(),
+                     opacity,
+                     cx.transform,
+                     &effect_layer_shape,
+                     filter,
+-                    backdrop_filter,
++                    None,
+                     |scene| {
+                         if paints_own_box {
+                             cx.draw_background(scene);
+-- 
+2.50.1 (Apple Git-155)
+

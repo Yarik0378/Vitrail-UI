@@ -1,0 +1,40 @@
+From 4c833593d19b8877d99e717c171f75f2a4e8f197 Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Sun, 8 Nov 2026 19:01:21 +0200
+Subject: [PATCH 2/7] Filters: chained primitives add up their bounds expansion
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+A primitive fed by the previous one's result (a CSS filter list) grows what
+that result already grew, so a drop shadow then a blur reach offset + 3σ;
+the union cut the shadow's blurred edge.
+---
+ crates/anyrender/src/filters.rs | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/crates/anyrender/src/filters.rs b/crates/anyrender/src/filters.rs
+index 2b7d7de..1e5d5ec 100644
+--- a/crates/anyrender/src/filters.rs
++++ b/crates/anyrender/src/filters.rs
+@@ -112,9 +112,15 @@ impl Filter {
+     pub fn add(&mut self, effect: FilterEffect, inputs: FilterInputs) -> FilterId {
+         let id = FilterId(self.primitives.len() as u16);
+ 
+-        // Update accumulated expansion by taking the union of rects
++        // webui-lab: a primitive fed by the previous one's result grows what that result already grew (a shadow
++        // then a blur reach offset + 3σ), so chained expansions add up; independent ones are united.
+         let primitive_rect = effect.expansion_rect();
+-        self.expansion_rect = self.expansion_rect.union(primitive_rect);
++        self.expansion_rect = if matches!(inputs.primary, Some(FilterInput::Result(_))) {
++            let e = self.expansion_rect;
++            Rect::new(e.x0 + primitive_rect.x0, e.y0 + primitive_rect.y0, e.x1 + primitive_rect.x1, e.y1 + primitive_rect.y1)
++        } else {
++            self.expansion_rect.union(primitive_rect)
++        };
+ 
+         self.primitives.push(FilterGraphNode { effect, inputs });
+ 
+-- 
+2.50.1 (Apple Git-155)
+

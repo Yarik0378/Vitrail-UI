@@ -1,0 +1,72 @@
+From 85bae1822e56cd655faca9f25f6dedbe5e8afdad Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Sun, 8 Nov 2026 21:38:07 +0200
+Subject: [PATCH 06/13] Filters: CSS lengths (blur radii, shadow offsets)
+ scaled by the device scale
+
+The scene is in device px; at 2x a blur(3px) blurred by 3 device px.
+---
+ packages/blitz-paint/src/filters.rs | 15 ++++++++-------
+ packages/blitz-paint/src/render.rs  |  4 ++--
+ 2 files changed, 10 insertions(+), 9 deletions(-)
+
+diff --git a/packages/blitz-paint/src/filters.rs b/packages/blitz-paint/src/filters.rs
+index d7389f0..fde43c8 100644
+--- a/packages/blitz-paint/src/filters.rs
++++ b/packages/blitz-paint/src/filters.rs
+@@ -4,19 +4,20 @@ pub(crate) use style::computed_values::filter::single_value::T as StyloFilter;
+ 
+ use anyrender::filters::{Filter, FilterEffect};
+ 
+-pub(crate) fn convert_filters(filters: &[StyloFilter]) -> Option<Filter> {
++/// webui-lab: lengths (blur radii, shadow offsets) are CSS px; the scene is in device px, so they are scaled by `scale`.
++pub(crate) fn convert_filters(filters: &[StyloFilter], scale: f32) -> Option<Filter> {
+     if filters.is_empty() {
+         return None;
+     }
+ 
+     Some(Filter::linear_list(
+-        filters.iter().filter_map(convert_single_filter),
++        filters.iter().filter_map(|f| convert_single_filter(f, scale)),
+     ))
+ }
+ 
+-pub(crate) fn convert_single_filter(filter: &StyloFilter) -> Option<FilterEffect> {
++pub(crate) fn convert_single_filter(filter: &StyloFilter, scale: f32) -> Option<FilterEffect> {
+     Some(match filter {
+-        StyloFilter::Blur(radius) => FilterEffect::blur(radius.px()),
++        StyloFilter::Blur(radius) => FilterEffect::blur(radius.px() * scale),
+         StyloFilter::Brightness(amount) => FilterEffect::brightness(amount.0),
+         StyloFilter::Contrast(amount) => FilterEffect::contrast(amount.0),
+         StyloFilter::Grayscale(amount) => FilterEffect::grayscale(amount.0),
+@@ -26,9 +27,9 @@ pub(crate) fn convert_single_filter(filter: &StyloFilter) -> Option<FilterEffect
+         StyloFilter::Saturate(amount) => FilterEffect::saturate(amount.0),
+         StyloFilter::Sepia(amount) => FilterEffect::sepia(amount.0),
+         StyloFilter::DropShadow(shadow) => FilterEffect::drop_shadow(
+-            shadow.horizontal.px(),
+-            shadow.vertical.px(),
+-            shadow.blur.px(),
++            shadow.horizontal.px() * scale,
++            shadow.vertical.px() * scale,
++            shadow.blur.px() * scale,
+             // TODO: pass in correct currentColor
+             shadow
+                 .color
+diff --git a/packages/blitz-paint/src/render.rs b/packages/blitz-paint/src/render.rs
+index e0e73c2..b0d4f99 100644
+--- a/packages/blitz-paint/src/render.rs
++++ b/packages/blitz-paint/src/render.rs
+@@ -611,8 +611,8 @@ impl<'dom, 'a> BlitzDomPainter<'dom, 'a> {
+                 // Save it so that the mask can be drawn untransformed by scroll offsets.
+                 let unscrolled_transform = cx.transform;
+ 
+-                let filter = convert_filters(&effects.filter.0).map(Arc::new);
+-                let backdrop_filter = convert_filters(&effects.backdrop_filter.0).map(Arc::new);
++                let filter = convert_filters(&effects.filter.0, self.scale as f32).map(Arc::new);
++                let backdrop_filter = convert_filters(&effects.backdrop_filter.0, self.scale as f32).map(Arc::new);
+ 
+                 // Adjust effect layer clip by filter expansion area
+                 //
+-- 
+2.50.1 (Apple Git-155)
+

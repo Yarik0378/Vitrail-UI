@@ -1,0 +1,40 @@
+From 63a9a0ee1c128f35bfa31de34e4bc0c2757a2684 Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Sun, 8 Nov 2026 20:27:28 +0200
+Subject: [PATCH 04/13] backdrop-filter: the layer is clipped to the rounded
+ border box (as Chrome shows the glass)
+
+---
+ packages/blitz-paint/src/render.rs | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/packages/blitz-paint/src/render.rs b/packages/blitz-paint/src/render.rs
+index 1959ccb..23c1009 100644
+--- a/packages/blitz-paint/src/render.rs
++++ b/packages/blitz-paint/src/render.rs
+@@ -629,6 +629,13 @@ impl<'dom, 'a> BlitzDomPainter<'dom, 'a> {
+                 effect_layer_clip.y0 += filter_expansion_area.y0;
+                 effect_layer_clip.x1 += filter_expansion_area.x1;
+                 effect_layer_clip.y1 += filter_expansion_area.y1;
++                // webui-lab: a backdrop-filter shows through the element's rounded border box (as in Chrome), so
++                // without a filter widening the layer, the layer is clipped to that shape rather than its bounds.
++                let effect_layer_shape: kurbo::BezPath = if backdrop_filter.is_some() && filter.is_none() {
++                    cx.frame.border_box_path()
++                } else {
++                    effect_layer_clip.to_path(0.1)
++                };
+ 
+                 // Opacity/Filter layer if box has opacity or a filter.
+                 // Clipped to border-box as it needs to include the background and borders.
+@@ -638,7 +645,7 @@ impl<'dom, 'a> BlitzDomPainter<'dom, 'a> {
+                     BlendMode::default(),
+                     opacity,
+                     cx.transform,
+-                    &effect_layer_clip,
++                    &effect_layer_shape,
+                     filter,
+                     backdrop_filter,
+                     |scene| {
+-- 
+2.50.1 (Apple Git-155)
+

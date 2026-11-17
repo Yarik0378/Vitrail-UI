@@ -1,0 +1,73 @@
+From 67f48d6e8a87c902f5522ce90f4113c288569aec Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Tue, 10 Nov 2026 03:04:19 +0200
+Subject: [PATCH 7/7] Filtered SVG groups cached by what they draw, not by
+ their address (a freed tree's address was reused by the next page)
+
+---
+ crates/anyrender_svg/src/render.rs | 38 +++++++++++++++++++++++++++---
+ 1 file changed, 35 insertions(+), 3 deletions(-)
+
+diff --git a/crates/anyrender_svg/src/render.rs b/crates/anyrender_svg/src/render.rs
+index 2f7e18f..7384f0a 100644
+--- a/crates/anyrender_svg/src/render.rs
++++ b/crates/anyrender_svg/src/render.rs
+@@ -223,13 +223,14 @@ fn stroke<S: PaintScene, F: FnMut(&mut S, &usvg::Node)>(
+ /// goes on the canvas.
+ fn rasterize_filtered(node: &usvg::Node, g: &usvg::Group, global_transform: Affine) -> Option<(peniko::ImageBrush, Affine)> {
+     // The same group at the same place and size comes from the cache: a filtered SVG is costly to rasterize and a HUD
+-    // repaints it on every hover.
++    // repaints it on every hover. The key is what the group is, not where it lives in memory: a freed tree's address is
++    // reused by the next one (a reloaded page, an element rebuilt by innerHTML), which then got the old picture.
+     use std::collections::HashMap;
+     use std::sync::{Mutex, OnceLock};
+-    type Key = (usize, [i64; 6]);
++    type Key = (u64, [i64; 6]);
+     static CACHE: OnceLock<Mutex<HashMap<Key, (peniko::ImageBrush, Affine)>>> = OnceLock::new();
+     let c6 = global_transform.as_coeffs();
+-    let key: Key = (g as *const usvg::Group as usize, c6.map(|v| (v * 64.0).round() as i64));
++    let key: Key = (fingerprint(g), c6.map(|v| (v * 64.0).round() as i64));
+     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+     if let Some(hit) = cache.lock().unwrap().get(&key) {
+         return Some(hit.clone());
+@@ -241,6 +242,37 @@ fn rasterize_filtered(node: &usvg::Node, g: &usvg::Group, global_transform: Affi
+     Some(made)
+ }
+ 
++/// What a filtered group draws, as a hash: its filters and every node under it (paths with their paint and shape).
++fn fingerprint(g: &usvg::Group) -> u64 {
++    use std::hash::{Hash, Hasher};
++    fn rect(h: &mut impl Hasher, r: usvg::Rect) {
++        for v in [r.x(), r.y(), r.width(), r.height()] { v.to_bits().hash(h); }
++    }
++    fn group(h: &mut impl Hasher, g: &usvg::Group) {
++        g.opacity().get().to_bits().hash(h);
++        format!("{:?}", g.transform()).hash(h);
++        for f in g.filters() {
++            rect(h, f.rect().to_rect());
++            format!("{:?}", f.primitives()).hash(h);
++        }
++        for child in g.children() {
++            match child {
++                usvg::Node::Group(c) => { 0u8.hash(h); group(h, c); }
++                usvg::Node::Path(p) => {
++                    1u8.hash(h);
++                    format!("{:?}{:?}", p.fill().map(|f| (f.paint(), f.opacity().get().to_bits())), p.stroke().map(|s| (s.paint(), s.width().get().to_bits()))).hash(h);
++                    format!("{:?}", p.data()).hash(h);
++                }
++                usvg::Node::Image(i) => { 2u8.hash(h); rect(h, i.bounding_box()); }
++                usvg::Node::Text(t) => { 3u8.hash(h); rect(h, t.bounding_box()); }
++            }
++        }
++    }
++    let mut h = std::collections::hash_map::DefaultHasher::new();
++    group(&mut h, g);
++    h.finish()
++}
++
+ fn rasterize_filtered_uncached(node: &usvg::Node, g: &usvg::Group, global_transform: Affine) -> Option<(peniko::ImageBrush, Affine)> {
+     let r = g.abs_layer_bounding_box();
+     let rect = global_transform.transform_rect_bbox(kurbo::Rect::new(r.x() as f64, r.y() as f64, r.right() as f64, r.bottom() as f64));
+-- 
+2.50.1 (Apple Git-155)
+

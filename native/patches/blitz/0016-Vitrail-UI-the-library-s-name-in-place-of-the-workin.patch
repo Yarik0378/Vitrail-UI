@@ -1,0 +1,498 @@
+From 23895dac40a066573bd297b4705d3d74bc4ebadc Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Mon, 9 Nov 2026 12:53:58 +0200
+Subject: [PATCH] Vitrail UI: the library's name in place of the working name
+ webui
+---
+ Cargo.lock                                    |  2 +-
+ Cargo.toml                                    |  2 +-
+ .../{webui_mutate.rs => vitrail_mutate.rs}    |  2 +-
+ .../{webui_render.rs => vitrail_render.rs}    |  4 ++--
+ packages/blitz-dom/assets/default.css         | 18 +++++++-------
+ packages/blitz-dom/src/document.rs            | 24 +++++++++----------
+ packages/blitz-dom/src/layout/damage.rs       |  2 +-
+ packages/blitz-dom/src/node/serialize.rs      |  2 +-
+ packages/blitz-dom/src/resolve.rs             |  2 +-
+ packages/blitz-dom/src/scrolling.rs           |  4 ++--
+ packages/blitz-dom/src/stylo.rs               |  2 +-
+ packages/blitz-paint/src/filters.rs           |  2 +-
+ packages/blitz-paint/src/gradient.rs          |  2 +-
+ packages/blitz-paint/src/layers.rs            |  2 +-
+ packages/blitz-paint/src/lib.rs               |  2 +-
+ packages/blitz-paint/src/render.rs            | 22 ++++++++---------
+ packages/blitz-paint/src/render/box_shadow.rs |  4 ++--
+ packages/blitz-paint/src/render/clip_path.rs  |  2 +-
+ packages/blitz-paint/src/text.rs              |  4 ++--
+ 19 files changed, 52 insertions(+), 52 deletions(-)
+ rename examples/{webui_mutate.rs => vitrail_mutate.rs} (96%)
+ rename examples/{webui_render.rs => vitrail_render.rs} (92%)
+
+diff --git a/Cargo.lock b/Cargo.lock
+index e4c8107..6e49c03 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -9642,7 +9642,7 @@ dependencies = [
+ ]
+ 
+ [[package]]
+-name = "webui"
++name = "vitrail"
+ version = "0.1.0"
+ dependencies = [
+  "anyrender",
+diff --git a/Cargo.toml b/Cargo.toml
+index fbf06c2..c5fe395 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -27,7 +27,7 @@ members = [
+     "examples/todomvc",
+     "examples/wgpu_texture",
+     "examples/wasm_hello",
+-    "../webui-ffi",
++    "../vitrail-ffi",
+ ]
+ exclude = ["sites"]
+ resolver = "2"
+diff --git a/examples/webui_mutate.rs b/examples/vitrail_mutate.rs
+similarity index 96%
+rename from examples/webui_mutate.rs
+rename to examples/vitrail_mutate.rs
+index b273037..bfe6cb7 100644
+--- a/examples/webui_mutate.rs
++++ b/examples/vitrail_mutate.rs
+@@ -1,4 +1,4 @@
+-//! webui-lab: check that changing an inline SVG's attributes after load repaints it.
++//! vitrail-ui: check that changing an inline SVG's attributes after load repaints it.
+ use anyrender::render_to_buffer;
+ use anyrender_vello_cpu::VelloCpuImageRenderer;
+ use blitz_dom::{DocumentConfig, LocalName, QualName, ns};
+diff --git a/examples/webui_render.rs b/examples/vitrail_render.rs
+similarity index 92%
+rename from examples/webui_render.rs
+rename to examples/vitrail_render.rs
+index 18e799c..83e31b1 100644
+--- a/examples/webui_render.rs
++++ b/examples/vitrail_render.rs
+@@ -1,5 +1,5 @@
+-//! webui-lab: render a local HTML file to a transparent PNG with Blitz's CPU painter, for pixel comparison with Chrome.
+-//! Usage: webui_render <in.html> <out.png> <css width> <css height> [scale] [unpremultiply 0/1]
++//! vitrail-ui: render a local HTML file to a transparent PNG with Blitz's CPU painter, for pixel comparison with Chrome.
++//! Usage: vitrail_render <in.html> <out.png> <css width> <css height> [scale] [unpremultiply 0/1]
+ use anyrender::render_to_buffer;
+ use anyrender_vello_cpu::VelloCpuImageRenderer;
+ use blitz_dom::DocumentConfig;
+diff --git a/packages/blitz-dom/assets/default.css b/packages/blitz-dom/assets/default.css
+index 588430c..f4bc634 100644
+--- a/packages/blitz-dom/assets/default.css
++++ b/packages/blitz-dom/assets/default.css
+@@ -177,10 +177,10 @@ legend {
+     padding-inline-end: 2px;
+ }
+ 
+-/* webui-lab: <select> drawn by the library. The closed box shows the chosen option (:checked); the others are laid
++/* vitrail-ui: <select> drawn by the library. The closed box shows the chosen option (:checked); the others are laid
+    laid in the same grid cell, hidden, so the box is as wide as the widest option, as in Chrome. The arrow is a background image. Open,
+-   the library lays a <webui-popup> of <webui-option>s over the page (styleable: webui-popup, webui-option,
+-   webui-option[current], webui-option[checked], webui-optgroup). */
++   the library lays a <vitrail-popup> of <vitrail-option>s over the page (styleable: vitrail-popup, vitrail-option,
++   vitrail-option[current], vitrail-option[checked], vitrail-optgroup). */
+ select {
+     display: inline-grid;
+     box-sizing: border-box;
+@@ -207,7 +207,7 @@ select:focus-visible { outline: 2px solid #4D90FE; }
+ option {
+     display: none;
+ }
+-webui-popup {
++vitrail-popup {
+     display: block;
+     position: fixed;
+     z-index: 2147483647;
+@@ -224,11 +224,11 @@ webui-popup {
+     white-space: nowrap;
+     user-select: none;
+ }
+-webui-option { display: block; padding: 2px 8px; cursor: default; }
+-webui-option[current] { background: #1a73e8; color: white; }
+-webui-option[disabled] { color: #8c8c8c; }
+-webui-optgroup { display: block; padding: 2px 6px; font-weight: bold; }
+-webui-optgroup + webui-option, webui-optgroup ~ webui-option { padding-left: 16px; }
++vitrail-option { display: block; padding: 2px 8px; cursor: default; }
++vitrail-option[current] { background: #1a73e8; color: white; }
++vitrail-option[disabled] { color: #8c8c8c; }
++vitrail-optgroup { display: block; padding: 2px 6px; font-weight: bold; }
++vitrail-optgroup + vitrail-option, vitrail-optgroup ~ vitrail-option { padding-left: 16px; }
+ 
+ source {
+     display: none;
+diff --git a/packages/blitz-dom/src/document.rs b/packages/blitz-dom/src/document.rs
+index df736d4..7283108 100644
+--- a/packages/blitz-dom/src/document.rs
++++ b/packages/blitz-dom/src/document.rs
+@@ -375,17 +375,17 @@ pub struct BaseDocument {
+     // TODO: collapse animating state into a bitflags
+     /// Whether there are active CSS animations/transitions (so we should re-render every frame)
+     pub(crate) has_active_animations: bool,
+-    /// webui-lab: elements the embedder composites on its own (painted between composited markers, at full opacity).
++    /// vitrail-ui: elements the embedder composites on its own (painted between composited markers, at full opacity).
+     pub composited: HashSet<NodeId>,
+-    /// webui-lab: when set, scroll containers' content is painted unscrolled between scroll markers, with this much
++    /// vitrail-ui: when set, scroll containers' content is painted unscrolled between scroll markers, with this much
+     /// extra content (CSS px) beyond each side of the scrollport, for the embedder to scroll on the GPU.
+     pub gpu_scroll_margin: Option<f64>,
+-    /// webui-lab: the viewport (CSS px) the last layout ran for (layout is skipped when nothing changed since).
++    /// vitrail-ui: the viewport (CSS px) the last layout ran for (layout is skipped when nothing changed since).
+     pub(crate) last_layout_space: Option<(f32, f32)>,
+-    /// webui-lab: retained painting. Nodes damaged since the last paint (gathered while `resolve` clears damage); an
++    /// vitrail-ui: retained painting. Nodes damaged since the last paint (gathered while `resolve` clears damage); an
+     /// element is repainted when it or anything inside it is here, else its last recording is reused.
+     pub paint_dirty: std::sync::Mutex<HashSet<NodeId>>,
+-    /// webui-lab: each element's last recording, kept by the painter (blitz-paint's type, so stored as `Any`).
++    /// vitrail-ui: each element's last recording, kept by the painter (blitz-paint's type, so stored as `Any`).
+     pub paint_cache: std::sync::Mutex<Option<Box<dyn std::any::Any + Send>>>,
+     /// Whether there is a `<canvas>` element in the DOM (so we should re-render every frame)
+     pub(crate) has_canvas: bool,
+@@ -1562,7 +1562,7 @@ impl BaseDocument {
+                         layer_image.status = Status::Ok;
+                         layer_image.image = image.clone();
+                     }
+-                    // webui-lab: a loaded background damages nothing, but the element's painting changed.
++                    // vitrail-ui: a loaded background damages nothing, but the element's painting changed.
+                     self.paint_dirty.lock().unwrap().insert(node_id);
+                 }
+             }
+@@ -1838,12 +1838,12 @@ impl BaseDocument {
+     pub fn set_mousedown_node_id(&mut self, node_id: Option<NodeId>) {
+         self.mousedown_node_id = node_id.and_then(|id| self.nearest_non_anonymous_ancestor(id));
+     }
+-    /// webui-lab: whether an element is checked (`:checked`: a checkbox, a radio, or a `<select>`'s chosen option).
++    /// vitrail-ui: whether an element is checked (`:checked`: a checkbox, a radio, or a `<select>`'s chosen option).
+     pub fn is_checked(&self, node_id: NodeId) -> bool {
+         self.nodes.get(node_id).and_then(|n| n.element_data()).is_some_and(|e| e.element_state.contains(ElementState::CHECKED))
+     }
+ 
+-    /// webui-lab: marks a `<select>`'s option chosen or not (`:checked`), restyling what depends on it.
++    /// vitrail-ui: marks a `<select>`'s option chosen or not (`:checked`), restyling what depends on it.
+     pub fn set_option_checked(&mut self, node_id: NodeId, checked: bool) {
+         if self.is_checked(node_id) == checked { return; }
+         self.snapshot_node_and(node_id, ElementState::CHECKED, |node| {
+@@ -1852,7 +1852,7 @@ impl BaseDocument {
+         });
+     }
+ 
+-    /// webui-lab: shows or hides the focused element's focus ring (`:focus-visible`): on after the keyboard or a
++    /// vitrail-ui: shows or hides the focused element's focus ring (`:focus-visible`): on after the keyboard or a
+     /// gamepad moved the focus, off after a press of the mouse (text fields keep it, as in browsers).
+     pub fn set_focus_ring(&mut self, node_id: NodeId, on: bool) {
+         let has = self.nodes.get(node_id).and_then(|n| n.element_data()).is_some_and(|e| e.element_state.contains(ElementState::FOCUSRING));
+@@ -2004,7 +2004,7 @@ impl BaseDocument {
+     pub(crate) fn show_scrollbars(&mut self, node_id: NodeId) {
+         if cfg!(feature = "scrollbars") {
+             self.scrollbar_activity.insert(node_id, Instant::now());
+-            // webui-lab: the thumbs show again (retained painting repaints the container).
++            // vitrail-ui: the thumbs show again (retained painting repaints the container).
+             self.paint_dirty.lock().unwrap().insert(node_id);
+         }
+     }
+@@ -2060,7 +2060,7 @@ impl BaseDocument {
+         // content under the overlay thumb) is unchanged.
+         let scrollbar_changed = hovered_scrollbar != self.hovered_scrollbar;
+         if scrollbar_changed {
+-            // webui-lab: the thumbs' look changed without damage (retained painting).
++            // vitrail-ui: the thumbs' look changed without damage (retained painting).
+             for scrollbar in [self.hovered_scrollbar, hovered_scrollbar].into_iter().flatten() {
+                 self.paint_dirty.lock().unwrap().insert(scrollbar.node_id);
+             }
+@@ -2490,7 +2490,7 @@ impl BaseDocument {
+         let mut current = Some(node_id);
+         while let Some(id) = current {
+             let node = &self.nodes[id];
+-            // webui-lab: an element's own scroll moves its content, not itself (only its containers' scroll count).
++            // vitrail-ui: an element's own scroll moves its content, not itself (only its containers' scroll count).
+             let own = id == node_id;
+             pos.x += node.unrounded_layout().location.x - if own { 0.0 } else { node.scroll_offset().x as f32 };
+             pos.y += node.unrounded_layout().location.y - if own { 0.0 } else { node.scroll_offset().y as f32 };
+diff --git a/packages/blitz-dom/src/layout/damage.rs b/packages/blitz-dom/src/layout/damage.rs
+index d6e6034..f588228 100644
+--- a/packages/blitz-dom/src/layout/damage.rs
++++ b/packages/blitz-dom/src/layout/damage.rs
+@@ -304,7 +304,7 @@ impl BaseDocument {
+         if !has_damage && !node.has_damaged_descendants() && !is_anonymous {
+             return;
+         }
+-        // webui-lab: what changed since the last paint (retained painting repaints these and their ancestors).
++        // vitrail-ui: what changed since the last paint (retained painting repaints these and their ancestors).
+         if has_damage { self.paint_dirty.lock().unwrap().insert(node_id); }
+         let anonymous_blocks = std::mem::take(&mut node.anonymous_blocks);
+         let children = std::mem::take(&mut node.children);
+diff --git a/packages/blitz-dom/src/node/serialize.rs b/packages/blitz-dom/src/node/serialize.rs
+index 30ec3e3..569d6b8 100644
+--- a/packages/blitz-dom/src/node/serialize.rs
++++ b/packages/blitz-dom/src/node/serialize.rs
+@@ -180,7 +180,7 @@ impl Node {
+                     writer.push('"');
+                 }
+ 
+-                // webui-lab: CSS rules that style an inline <svg> (`.btn svg { stroke: …; fill: none }`) are lost once
++                // vitrail-ui: CSS rules that style an inline <svg> (`.btn svg { stroke: …; fill: none }`) are lost once
+                 // the subtree goes to usvg as text, so the root carries its computed SVG paint as presentation
+                 // attributes; children inherit them unless they set their own.
+                 if opts.resolve_current_color && nesting == 0 && AsRef::<str>::as_ref(&data.name.local) == "svg" {
+diff --git a/packages/blitz-dom/src/resolve.rs b/packages/blitz-dom/src/resolve.rs
+index aa49cd7..891f27a 100644
+--- a/packages/blitz-dom/src/resolve.rs
++++ b/packages/blitz-dom/src/resolve.rs
+@@ -440,7 +440,7 @@ impl BaseDocument {
+ 
+         let root_element_id = crate::taffy_node_id(self.root_element().id);
+ 
+-        // webui-lab: nothing to lay out when the root's layout cache survived (any relayout damage clears it up to the
++        // vitrail-ui: nothing to lay out when the root's layout cache survived (any relayout damage clears it up to the
+         // root) and the viewport is the same: compute and rounding would walk the whole tree for nothing (a 2000-cell
+         // page paid ≈0.2 ms on every hover).
+         let space = (size.width.to_f32_px(), size.height.to_f32_px());
+diff --git a/packages/blitz-dom/src/scrolling.rs b/packages/blitz-dom/src/scrolling.rs
+index 5e3abb3..757d40a 100644
+--- a/packages/blitz-dom/src/scrolling.rs
++++ b/packages/blitz-dom/src/scrolling.rs
+@@ -295,7 +295,7 @@ impl BaseDocument {
+             ScrollTarget::Viewport => {
+                 let initial = self.viewport_scroll();
+                 self.set_viewport_scroll(offset);
+-                // webui-lab: the whole page moved (retained painting).
++                // vitrail-ui: the whole page moved (retained painting).
+                 let root = self.root_element().id;
+                 self.paint_dirty.lock().unwrap().insert(root);
+                 if offset == initial {
+@@ -330,7 +330,7 @@ impl BaseDocument {
+                 if offset == initial {
+                     return false;
+                 }
+-                // webui-lab: scrolling damages nothing, but the container's painting changed (retained painting).
++                // vitrail-ui: scrolling damages nothing, but the container's painting changed (retained painting).
+                 self.paint_dirty.lock().unwrap().insert(node_id);
+ 
+                 let scroll_width = node.scroll_width();
+diff --git a/packages/blitz-dom/src/stylo.rs b/packages/blitz-dom/src/stylo.rs
+index 4606a7b..3e77971 100644
+--- a/packages/blitz-dom/src/stylo.rs
++++ b/packages/blitz-dom/src/stylo.rs
+@@ -1622,7 +1622,7 @@ fn parse_inline() {
+ }
+ 
+ impl crate::BaseDocument {
+-    /// webui-lab: the elements whose animations and transitions are running, when every one of them animates only
++    /// vitrail-ui: the elements whose animations and transitions are running, when every one of them animates only
+     /// properties a compositor can apply (transform, translate, rotate, scale, opacity); None when anything else
+     /// animates (the page must be painted again then).
+     pub fn compositor_animations(&self, now: f64) -> Option<Vec<NodeId>> {
+diff --git a/packages/blitz-paint/src/filters.rs b/packages/blitz-paint/src/filters.rs
+index fde43c8..1a8d4e6 100644
+--- a/packages/blitz-paint/src/filters.rs
++++ b/packages/blitz-paint/src/filters.rs
+@@ -4,7 +4,7 @@ pub(crate) use style::computed_values::filter::single_value::T as StyloFilter;
+ 
+ use anyrender::filters::{Filter, FilterEffect};
+ 
+-/// webui-lab: lengths (blur radii, shadow offsets) are CSS px; the scene is in device px, so they are scaled by `scale`.
++/// vitrail-ui: lengths (blur radii, shadow offsets) are CSS px; the scene is in device px, so they are scaled by `scale`.
+ pub(crate) fn convert_filters(filters: &[StyloFilter], scale: f32) -> Option<Filter> {
+     if filters.is_empty() {
+         return None;
+diff --git a/packages/blitz-paint/src/gradient.rs b/packages/blitz-paint/src/gradient.rs
+index 8333d67..d2a2b44 100644
+--- a/packages/blitz-paint/src/gradient.rs
++++ b/packages/blitz-paint/src/gradient.rs
+@@ -158,7 +158,7 @@ fn linear_gradient(
+     (gradient, None)
+ }
+ 
+-/// webui-lab: radial and conic gradients resolve their lengths (`circle 22px`, `at 30px 10px`, `transparent 25px`) in
++/// vitrail-ui: radial and conic gradients resolve their lengths (`circle 22px`, `at 30px 10px`, `transparent 25px`) in
+ /// CSS px, but the tile they fill is in device px; so they are built for the tile in CSS px and scaled up after, or
+ /// every px length came out `scale` times too small on a HiDPI screen (percentages were right).
+ fn in_css_px(
+diff --git a/packages/blitz-paint/src/layers.rs b/packages/blitz-paint/src/layers.rs
+index bcc1d37..df2d843 100644
+--- a/packages/blitz-paint/src/layers.rs
++++ b/packages/blitz-paint/src/layers.rs
+@@ -3,7 +3,7 @@ use kurbo::{Affine, Shape};
+ use peniko::{BlendMode, Fill};
+ use std::{cell::Cell, sync::Arc};
+ 
+-/// webui-lab: no limit. The limit (1024, for Vello) made an element's painting depend on how many layers came
++/// vitrail-ui: no limit. The limit (1024, for Vello) made an element's painting depend on how many layers came
+ /// before it in the frame (past it, shadows and clips were silently dropped), which retained painting can't reuse; the
+ /// GPU painter applies clips per pixel and has no such limit.
+ const LAYER_LIMIT: u32 = u32::MAX;
+diff --git a/packages/blitz-paint/src/lib.rs b/packages/blitz-paint/src/lib.rs
+index 86b58ba..0517882 100644
+--- a/packages/blitz-paint/src/lib.rs
++++ b/packages/blitz-paint/src/lib.rs
+@@ -59,7 +59,7 @@ pub fn paint_scene(
+     #[cfg(feature = "custom-widget")]
+     build_custom_widget_scenes(&mut custom_widget_scenes, doc, scene, scale);
+ 
+-    // webui-lab: retained painting: the damaged nodes and their ancestors are walked again, the rest reused.
++    // vitrail-ui: retained painting: the damaged nodes and their ancestors are walked again, the rest reused.
+     let retained = (std::env::var_os("BLITZ_NO_RETAIN").is_none()).then(|| {
+         let dirty: std::collections::HashSet<NodeId> = std::mem::take(&mut *doc.paint_dirty.lock().unwrap());
+         let mut dirty_up: std::collections::HashSet<NodeId, render::IdHash> = Default::default();
+diff --git a/packages/blitz-paint/src/render.rs b/packages/blitz-paint/src/render.rs
+index 2ce526b..cf947f3 100644
+--- a/packages/blitz-paint/src/render.rs
++++ b/packages/blitz-paint/src/render.rs
+@@ -114,7 +114,7 @@ impl<'a> PhysicalTracks<'a> {
+ 
+ /// A short-lived struct which holds a bunch of parameters for rendering a scene so
+ /// that we don't have to pass them down as parameters
+-/// webui-lab: retained painting. Each element's last recording, kept with what it was painted for; an element neither
++/// vitrail-ui: retained painting. Each element's last recording, kept with what it was painted for; an element neither
+ /// damaged since nor holding anything damaged, painted for the same place, appends it as a shared group instead of
+ /// walking its subtree again.
+ pub struct Retained {
+@@ -125,7 +125,7 @@ pub struct Retained {
+     pub(crate) volatile: std::cell::Cell<bool>,
+ }
+ 
+-/// webui-lab: node ids hashed by their bits (a big page looks up thousands a paint; SipHash was most of the cost).
++/// vitrail-ui: node ids hashed by their bits (a big page looks up thousands a paint; SipHash was most of the cost).
+ pub type IdHash = std::hash::BuildHasherDefault<IdHasher>;
+ 
+ #[derive(Default)]
+@@ -179,7 +179,7 @@ pub struct BlitzDomPainter<'dom, 'a> {
+     pub(crate) draw_text_context: RefCell<DrawTextContext>,
+     /// Cached selection ranges for O(1) lookup: node_id -> (start_offset, end_offset)
+     pub(crate) selection_ranges: HashMap<NodeId, (usize, usize)>,
+-    /// webui-lab: retained painting (None: paint everything).
++    /// vitrail-ui: retained painting (None: paint everything).
+     pub(crate) retained: Option<Retained>,
+ 
+     // Pre-computed `Scene`s for each CustomWidget
+@@ -484,7 +484,7 @@ impl<'dom, 'a> BlitzDomPainter<'dom, 'a> {
+         }
+ 
+         let effects = styles.get_effects();
+-        // webui-lab: a composited element is painted at full opacity (even when it is fading in from nothing): the
++        // vitrail-ui: a composited element is painted at full opacity (even when it is fading in from nothing): the
+         // embedder applies its opacity as it composites it.
+         let composited = self.dom.as_ref().composited.contains(&node_id);
+         let opacity = if composited { 1.0 } else { effects.opacity };
+@@ -680,7 +680,7 @@ impl<'dom, 'a> BlitzDomPainter<'dom, 'a> {
+                 effect_layer_clip.y0 += filter_expansion_area.y0;
+                 effect_layer_clip.x1 += filter_expansion_area.x1;
+                 effect_layer_clip.y1 += filter_expansion_area.y1;
+-                // webui-lab: a backdrop-filter shows through the element's rounded border box (as in Chrome), so
++                // vitrail-ui: a backdrop-filter shows through the element's rounded border box (as in Chrome), so
+                 // without a filter widening the layer, the layer is clipped to that shape rather than its bounds.
+                 let effect_layer_shape: kurbo::BezPath = if backdrop_filter.is_some() && filter.is_none() {
+                     cx.frame.border_box_path()
+@@ -729,7 +729,7 @@ impl<'dom, 'a> BlitzDomPainter<'dom, 'a> {
+                             None,
+                             None,
+                             |scene| {
+-                                // webui-lab: a scroll container's content painted unscrolled for the embedder to scroll
++                                // vitrail-ui: a scroll container's content painted unscrolled for the embedder to scroll
+                                 // on the GPU: culled against the scrollport moved by the offset and grown by the margin,
+                                 // between scroll markers.
+                                 let gpu_scroll = self.dom.as_ref().gpu_scroll_margin.filter(|_| {
+@@ -850,7 +850,7 @@ impl<'dom, 'a> BlitzDomPainter<'dom, 'a> {
+         }
+     }
+ 
+-    /// webui-lab: what an element's painting depends on beyond its damage: text fields (their editor changes without
++    /// vitrail-ui: what an element's painting depends on beyond its damage: text fields (their editor changes without
+     /// damage), selected text, custom widgets.
+     fn volatile(&self, node: &Node) -> bool {
+         node.element_data().is_some_and(|e| e.text_input_data().is_some())
+@@ -870,7 +870,7 @@ impl<'dom, 'a> BlitzDomPainter<'dom, 'a> {
+ 
+         match &node.data {
+             NodeData::Element(_) | NodeData::AnonymousBlock(_) => {
+-                // webui-lab: an element the embedder composites on its own is marked, with its world transform and
++                // vitrail-ui: an element the embedder composites on its own is marked, with its world transform and
+                 // its own CSS transform as painted, so it can be moved and faded without painting again.
+                 let composited = self.dom.as_ref().composited.contains(&node_id);
+                 if composited {
+@@ -1482,7 +1482,7 @@ impl ElementCx<'_, '_> {
+             x_offset.px(),
+             y_offset.px(),
+             |scene| {
+-                // webui-lab: an inline <svg> clips its content to its viewport (overflow: hidden), so a filter's
++                // vitrail-ui: an inline <svg> clips its content to its viewport (overflow: hidden), so a filter's
+                 // shadow doesn't spill past the element, as in browsers.
+                 scene.push_clip_layer(peniko::Fill::NonZero, self.transform, &self.frame.content_box);
+                 anyrender_svg::render_svg_tree(scene, &svg.tree, transform);
+@@ -1566,10 +1566,10 @@ impl ElementCx<'_, '_> {
+                 x_offset.px(),
+                 y_offset.px(),
+                 |scene| {
+-                    // webui-lab: an image drawn much smaller than it is gets an area-averaged copy at its drawn size
++                    // vitrail-ui: an image drawn much smaller than it is gets an area-averaged copy at its drawn size
+                     // (as Chrome's mipmapped filtering does); plain bilinear sampling of a 128px icon at 24px sparkles.
+                     let (tw, th) = (paint_size.width.round() as u32, paint_size.height.round() as u32);
+-                    // A game texture's placeholder (the webui bridge marks it in its first pixel) is drawn as it is:
++                    // A game texture's placeholder (the vitrail bridge marks it in its first pixel) is drawn as it is:
+                     // the GPU painter puts the texture in its place and must recognise it.
+                     let placeholder = image.data.data().get(0..4) == Some(&[0x57, 0x45, 0x42, 0x00][..]);
+                     if !placeholder && tw > 0 && th > 0 && (tw as f32) < image.width as f32 * 0.75 && (th as f32) < image.height as f32 * 0.75 {
+diff --git a/packages/blitz-paint/src/render/box_shadow.rs b/packages/blitz-paint/src/render/box_shadow.rs
+index cc47d8b..1d5c6e4 100644
+--- a/packages/blitz-paint/src/render/box_shadow.rs
++++ b/packages/blitz-paint/src/render/box_shadow.rs
+@@ -61,7 +61,7 @@ impl ElementCx<'_, '_> {
+                         });
+ 
+                         let spread = shadow.spread.px() as f64 * self.scale;
+-                        // webui-lab: a CSS blur radius is twice the Gaussian σ (and is in CSS px, so scaled).
++                        // vitrail-ui: a CSS blur radius is twice the Gaussian σ (and is in CSS px, so scaled).
+                         let blur = shadow.base.blur.px() as f64 * self.scale / 2.0;
+ 
+                         // Without blur or spread the shadow is exactly the element's shape,
+@@ -106,7 +106,7 @@ impl ElementCx<'_, '_> {
+ 
+         let padding_box = self.frame.padding_box_path();
+ 
+-        // webui-lab: CSS paints the first listed shadow on top, so draw them last to first.
++        // vitrail-ui: CSS paints the first listed shadow on top, so draw them last to first.
+         for shadow in box_shadow.iter().filter(|s| s.inset).rev() {
+             let shadow_color = shadow
+                 .base
+diff --git a/packages/blitz-paint/src/render/clip_path.rs b/packages/blitz-paint/src/render/clip_path.rs
+index 8f6acd5..cd3a526 100644
+--- a/packages/blitz-paint/src/render/clip_path.rs
++++ b/packages/blitz-paint/src/render/clip_path.rs
+@@ -163,7 +163,7 @@ impl ElementCx<'_, '_> {
+                     return None;
+                 }
+ 
+-                // webui-lab: `round` corners (elliptical, shrunk together when they overlap, as border-radius).
++                // vitrail-ui: `round` corners (elliptical, shrunk together when they overlap, as border-radius).
+                 let r = &inset_rect.round;
+                 let (bw, bh) = (x1 - x0, y1 - y0);
+                 let corner = |c: &style::values::generics::size::Size2D<style::values::generics::NonNegative<LengthPercentage>>| {
+diff --git a/packages/blitz-paint/src/text.rs b/packages/blitz-paint/src/text.rs
+index 469e806..8491f3d 100644
+--- a/packages/blitz-paint/src/text.rs
++++ b/packages/blitz-paint/src/text.rs
+@@ -662,7 +662,7 @@ pub(crate) fn stroke_text<'a>(
+                 };
+ 
+                 let normalized_coords: &[i16] = bytemuck::cast_slice(run.normalized_coords());
+-                // webui-lab: browsers put each line's baseline on a whole device pixel; without this the text sits
++                // vitrail-ui: browsers put each line's baseline on a whole device pixel; without this the text sits
+                 // up to half a pixel off and looks softer than in Chrome.
+                 // Like Chrome, the box's paint offset and the baseline within it are rounded separately.
+                 let origin_y = transform.translation().y;
+@@ -683,7 +683,7 @@ pub(crate) fn stroke_text<'a>(
+                         glyph_xform,
+                         glyph_run.positioned_glyphs().map(|glyph| anyrender::Glyph {
+                             id: glyph.id as _,
+-                            // webui-lab: glyphs on quarter-pixel positions, as Skia places them in Chrome.
++                            // vitrail-ui: glyphs on quarter-pixel positions, as Skia places them in Chrome.
+                             x: { let ox = transform.translation().x as f32; ((ox + glyph.x) * 4.0).round() / 4.0 - ox },
+                             y: glyph.y + snap,
+                         }),
+-- 
+2.50.1 (Apple Git-155)
+

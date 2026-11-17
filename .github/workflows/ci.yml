@@ -1,0 +1,124 @@
+# Builds the native library for macOS (universal), Windows (x86_64) and Linux (x86_64), runs the Rust tests (behaviour,
+# retained-painting equality, speed budgets with room for shared runners, and on macOS the comparison with Chrome's
+# references), and assembles the Unity package with all three libraries as an artifact.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  # Shared runners are slower and noisier than the M4 the budgets are set on: a change many times slower still fails.
+  PERF_SLACK: "6"
+  BUDGET: "4"
+
+jobs:
+  native:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS
+            os: macos-latest
+            out: macOS/libvitrail.dylib
+          - name: Windows
+            os: windows-2022
+            out: Windows/x86_64/vitrail.dll
+          - name: Linux
+            os: ubuntu-22.04
+            out: Linux/x86_64/libvitrail.so
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Linux libraries (fonts)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev libfreetype6-dev fonts-dejavu-core
+
+      - name: Blitz and anyrender with the patches
+        shell: bash
+        run: sh native/setup.sh
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native/blitz
+
+      - name: Tests
+        if: runner.os != 'Windows'
+        working-directory: native/vitrail-ffi
+        shell: bash
+        run: cargo test --release -- --test-threads 1
+
+      # On Windows only the tests with pages written inline (the others build file:// URLs from Unix paths).
+      - name: Tests (Windows)
+        if: runner.os == 'Windows'
+        working-directory: native/vitrail-ffi
+        shell: bash
+        run: cargo test --release --test smoke --test forms --test dev --test animation --test anim_budget -- --test-threads 1
+
+      - name: Build (macOS universal)
+        if: runner.os == 'macOS'
+        working-directory: native/blitz
+        run: |
+          cargo build --release -p vitrail --target aarch64-apple-darwin
+          cargo build --release -p vitrail --target x86_64-apple-darwin
+          mkdir -p ../../out/macOS
+          lipo -create target/aarch64-apple-darwin/release/libvitrail.dylib target/x86_64-apple-darwin/release/libvitrail.dylib -output ../../out/macOS/libvitrail.dylib
+          strip -x ../../out/macOS/libvitrail.dylib
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        working-directory: native/blitz
+        shell: bash
+        run: |
+          cargo build --release -p vitrail
+          mkdir -p ../../out/Windows/x86_64
+          cp target/release/vitrail.dll ../../out/Windows/x86_64/vitrail.dll
+
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        working-directory: native/blitz
+        run: |
+          cargo build --release -p vitrail
+          mkdir -p ../../out/Linux/x86_64
+          strip -o ../../out/Linux/x86_64/libvitrail.so target/release/libvitrail.so
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.name }}
+          path: out/${{ matrix.out }}
+          if-no-files-found: error
+
+  package:
+    needs: native
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: built
+      - name: The package with the three libraries
+        run: |
+          cp built/native-macOS/libvitrail.dylib package/Plugins/macOS/libvitrail.dylib
+          cp built/native-Windows/vitrail.dll package/Plugins/Windows/x86_64/vitrail.dll
+          mkdir -p package/Plugins/Linux/x86_64
+          cp built/native-Linux/libvitrail.so package/Plugins/Linux/x86_64/libvitrail.so
+          cp package/Plugins/.libvitrail.so.meta package/Plugins/Linux/x86_64/libvitrail.so.meta
+          printf 'fileFormatVersion: 2\nguid: 5b3f0c2e8d6a4f71a9e2c4d6b8f01a37\nfolderAsset: yes\nDefaultImporter:\n  externalObjects: {}\n  userData:\n  assetBundleName:\n  assetBundleVariant:\n' > package/Plugins/Linux.meta
+          printf 'fileFormatVersion: 2\nguid: 9c1d7e4a2b5f4e8c8d3a6f0b1e2c4a59\nfolderAsset: yes\nDefaultImporter:\n  externalObjects: {}\n  userData:\n  assetBundleName:\n  assetBundleVariant:\n' > package/Plugins/Linux/x86_64.meta
+          version=$(python3 -c "import json; print(json.load(open('package/package.json'))['version'])")
+          tar -czf "com.vitrail.ui-$version.tgz" --transform 's,^package,package,' package
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: com.vitrail.ui-${{ env.VERSION }}
+          path: com.vitrail.ui-*.tgz

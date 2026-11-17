@@ -1,0 +1,86 @@
+From 1d754f15029d8ca89aa673b28c57f3c3d5f9ef20 Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Sun, 8 Nov 2026 23:59:40 +0200
+Subject: [PATCH 08/13] Round layout to device pixels, not whole CSS pixels
+
+At a fractional scale a 1px border, which Stylo snaps to whole device pixels (2 at 2.53 = 0.79 CSS px), could round
+to 0 CSS px and vanish; edges also moved by up to half a CSS px. taffy::round_layout's algorithm, rounding to
+multiples of 1/scale.
+---
+ packages/blitz-dom/src/resolve.rs | 51 ++++++++++++++++++++++++++++++-
+ 1 file changed, 50 insertions(+), 1 deletion(-)
+
+diff --git a/packages/blitz-dom/src/resolve.rs b/packages/blitz-dom/src/resolve.rs
+index c5c420a..362e669 100644
+--- a/packages/blitz-dom/src/resolve.rs
++++ b/packages/blitz-dom/src/resolve.rs
+@@ -442,6 +442,9 @@ impl BaseDocument {
+ 
+         // println!("\n\nRESOLVE LAYOUT\n===========\n");
+ 
++        // Layout is rounded to device pixels, not whole CSS pixels: at a fractional scale (2.53 in the game) a
++        // border Stylo already snapped to 2 device px (0.79 CSS px) rounded to 0 CSS px and vanished.
++        let device_scale = self.viewport.hidpi_scale.max(0.01);
+         let mut state = LayoutPassState::new(self);
+         #[cfg(feature = "writing-mode")]
+         let available_space = {
+@@ -456,9 +459,55 @@ impl BaseDocument {
+         #[cfg(feature = "writing-mode")]
+         state.physicalise_and_round_layout(root_element_id);
+         #[cfg(not(feature = "writing-mode"))]
+-        taffy::round_layout(&mut state, root_element_id);
++        round_layout_to_device(&mut state, root_element_id, device_scale);
+ 
+         // println!("\n\n");
+         // taffy::print_tree(self, root_node_id)
+     }
+ }
++
++/// `taffy::round_layout` to device pixels: every edge is rounded in absolute coordinates to a multiple of 1/`scale`
++/// CSS px (each inner edge relative to its box's rounded outer edges, so adjacent boxes never gap or overlap), as a
++/// browser snaps to the screen's pixels. Rounding to whole CSS px at a fractional scale moved edges by up to half a CSS
++/// px and could round a thin border away.
++#[cfg(not(feature = "writing-mode"))]
++fn round_layout_to_device(tree: &mut impl taffy::RoundTree, node: taffy::NodeId, scale: f32) {
++    inner(tree, node, 0.0, 0.0, scale);
++
++    fn inner(tree: &mut impl taffy::RoundTree, node: taffy::NodeId, parent_x: f32, parent_y: f32, s: f32) {
++        let round = |v: f32| (v * s).round() / s;
++        let u = tree.get_unrounded_layout(node);
++        let mut l = u;
++        let (x, y) = (parent_x + u.location.x, parent_y + u.location.y);
++        let (w, h) = (u.size.width, u.size.height);
++        l.location.x = round(x) - round(parent_x);
++        l.location.y = round(y) - round(parent_y);
++        l.size.width = round(x + w) - round(x);
++        l.size.height = round(y + h) - round(y);
++        l.scrollbar_size.width = round(u.scrollbar_size.width);
++        l.scrollbar_size.height = round(u.scrollbar_size.height);
++        l.border.left = round(x + u.border.left) - round(x);
++        l.border.right = round(x + w) - round(x + w - u.border.right);
++        l.border.top = round(y + u.border.top) - round(y);
++        l.border.bottom = round(y + h) - round(y + h - u.border.bottom);
++        l.padding.left = round(x + u.padding.left) - round(x);
++        l.padding.right = round(x + w) - round(x + w - u.padding.right);
++        l.padding.top = round(y + u.padding.top) - round(y);
++        l.padding.bottom = round(y + h) - round(y + h - u.padding.bottom);
++        let o = u.scrollable_overflow_rect.rect();
++        let edge = |offset: f32, e: f32| { let r = round(offset + e) - round(offset); if r == 0.0 { r.copysign(e) } else { r } };
++        l.scrollable_overflow_rect = taffy::ScrollableOverflow::new(
++            taffy::Rect { left: edge(x, o.left), right: edge(x, o.right), top: edge(y, o.top), bottom: edge(y, o.bottom) },
++            u.scrollable_overflow_rect.is_reversed(),
++        );
++        tree.set_final_layout(node, &l);
++        for i in 0..tree.child_count(node) {
++            let child = tree.get_child_id(node, i);
++            if !tree.is_out_of_flow(child) { inner(tree, child, x, y, s); }
++        }
++        for i in 0..tree.hoisted_child_count(node) {
++            let child = tree.get_hoisted_child_id(node, i);
++            inner(tree, child, x, y, s);
++        }
++    }
++}
+-- 
+2.50.1 (Apple Git-155)
+

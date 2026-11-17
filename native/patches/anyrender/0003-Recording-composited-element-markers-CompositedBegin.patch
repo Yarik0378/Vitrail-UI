@@ -1,0 +1,91 @@
+From 2c56f546ab949dacc214b107e7005d76c4329126 Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Sun, 8 Nov 2026 20:55:34 +0200
+Subject: [PATCH 3/7] Recording: composited element markers
+ (CompositedBegin/End) and PaintScene hooks
+
+---
+ crates/anyrender/src/lib.rs       |  9 +++++++++
+ crates/anyrender/src/recording.rs | 25 +++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+)
+
+diff --git a/crates/anyrender/src/lib.rs b/crates/anyrender/src/lib.rs
+index 0637cbc..2556ffb 100644
+--- a/crates/anyrender/src/lib.rs
++++ b/crates/anyrender/src/lib.rs
+@@ -211,6 +211,13 @@ pub trait PaintScene: RenderContext {
+     /// Pops the current layer.
+     fn pop_layer(&mut self);
+ 
++    /// webui-lab: marks the start of an element the embedder may composite on its own (id, world transform as painted,
++    /// its own CSS transform). Painters that don't composite ignore it.
++    fn composited_begin(&mut self, _id: u64, _world: Affine, _local: Affine) {}
++
++    /// webui-lab: marks the end of a composited element.
++    fn composited_end(&mut self) {}
++
+     /// Strokes a shape using the specified style and brush.
+     fn stroke<'a>(
+         &mut self,
+@@ -277,6 +284,8 @@ pub trait PaintScene: RenderContext {
+                     self.push_clip_layer(cmd.fill, scene_transform * cmd.transform, &cmd.clip)
+                 }
+                 RenderCommand::PopLayer => self.pop_layer(),
++                RenderCommand::CompositedBegin(cmd) => self.composited_begin(cmd.id, scene_transform * cmd.world, cmd.local),
++                RenderCommand::CompositedEnd => self.composited_end(),
+                 RenderCommand::Stroke(cmd) => self.stroke(
+                     &cmd.style,
+                     scene_transform * cmd.transform,
+diff --git a/crates/anyrender/src/recording.rs b/crates/anyrender/src/recording.rs
+index c7392b5..d209561 100644
+--- a/crates/anyrender/src/recording.rs
++++ b/crates/anyrender/src/recording.rs
+@@ -30,6 +30,21 @@ pub enum RenderCommand<Font = FontData, Brush = Paint> {
+     GlyphRun(GlyphRunCommand<Font, Brush>),
+     /// Draw a rounded rectangle blurred with a gaussian filter.
+     BoxShadow(BoxShadowCommand),
++    /// webui-lab: what follows, up to `CompositedEnd`, is an element the embedder may composite on its own (its transform
++    /// or opacity animates): painters that don't composite ignore both.
++    CompositedBegin(CompositedCommand),
++    /// webui-lab: the end of a composited element.
++    CompositedEnd,
++}
++
++/// webui-lab: an element composited on its own: its node id, its world transform as painted (its own CSS transform
++/// included) and that own transform, so the embedder can move it as the transform animates.
++#[derive(Clone, Debug, PartialEq)]
++#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
++pub struct CompositedCommand {
++    pub id: u64,
++    pub world: Affine,
++    pub local: Affine,
+ }
+ 
+ impl RenderCommand {
+@@ -43,6 +58,8 @@ impl RenderCommand {
+             RenderCommand::Fill(cmd) => cmd.transform = transform * cmd.transform,
+             RenderCommand::GlyphRun(cmd) => cmd.transform = transform * cmd.transform,
+             RenderCommand::BoxShadow(cmd) => cmd.transform = transform * cmd.transform,
++            RenderCommand::CompositedBegin(cmd) => cmd.world = transform * cmd.world,
++            RenderCommand::CompositedEnd => {}
+         };
+ 
+         self
+@@ -218,6 +235,14 @@ impl PaintScene for Scene {
+         self.commands.push(RenderCommand::PopLayer);
+     }
+ 
++    fn composited_begin(&mut self, id: u64, world: Affine, local: Affine) {
++        self.commands.push(RenderCommand::CompositedBegin(CompositedCommand { id, world, local }));
++    }
++
++    fn composited_end(&mut self) {
++        self.commands.push(RenderCommand::CompositedEnd);
++    }
++
+     fn stroke<'a>(
+         &mut self,
+         style: &Stroke,
+-- 
+2.50.1 (Apple Git-155)
+

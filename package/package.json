@@ -1,0 +1,22 @@
+{
+  "name": "com.vitrail.ui",
+  "version": "0.1.0",
+  "displayName": "Vitrail UI",
+  "description": "Game interfaces in HTML, CSS and JavaScript, drawn by your game's GPU without a browser: Firefox's CSS engine (Stylo) and Taffy layout through Blitz, QuickJS for scripts, a GPU painter in URP. Retained painting and off-thread work keep a change under 0.3 ms of the frame.",
+  "unity": "6000.0",
+  "unityRelease": "0f1",
+  "documentationUrl": "https://github.com/Yarik0378/Vitrail-UI",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "keywords": ["ui", "html", "css", "javascript", "hud", "game-ui", "unity", "urp", "ui-toolkit-alternative", "backdrop-filter", "gameface", "webview"],
+  "author": { "name": "vitrail-ui" },
+  "dependencies": {
+    "com.unity.render-pipelines.universal": "17.0.3",
+    "com.unity.inputsystem": "1.7.0"
+  },
+  "samples": [
+    { "displayName": "Main menu", "description": "A full-screen menu: buttons, a select box, a slider, gamepad navigation, a click back to C#.", "path": "Samples~/Menu" },
+    { "displayName": "HUD", "description": "A top bar over the game with resources bound to a C# model (data-bind), glass (backdrop-filter) and hover tooltips.", "path": "Samples~/Hud" },
+    { "displayName": "Inventory", "description": "A scrolling inventory window: 300 cells, drag and drop between slots, the wheel and scrollbars.", "path": "Samples~/Inventory" },
+    { "displayName": "Panel in the world", "description": "A page on a quad in the scene (VitrailWorld) that takes clicks through a raycast.", "path": "Samples~/World" }
+  ]
+}

@@ -1,0 +1,141 @@
+From 8ec50e61acf65fb8b217c04e351925ed7cddbf12 Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Mon, 9 Nov 2026 03:51:11 +0200
+Subject: [PATCH] Select boxes drawn by CSS (option :checked, one grid cell),
+ :focus-visible from the focus ring, option checked state; client rects no
+ longer moved by the element's own scroll
+
+---
+ packages/blitz-dom/assets/default.css | 49 +++++++++++++++++++++++++++
+ packages/blitz-dom/src/document.rs    | 31 +++++++++++++++--
+ packages/blitz-dom/src/stylo.rs       |  2 +-
+ 3 files changed, 79 insertions(+), 3 deletions(-)
+
+diff --git a/packages/blitz-dom/assets/default.css b/packages/blitz-dom/assets/default.css
+index 6c569a6..588430c 100644
+--- a/packages/blitz-dom/assets/default.css
++++ b/packages/blitz-dom/assets/default.css
+@@ -177,9 +177,58 @@ legend {
+     padding-inline-end: 2px;
+ }
+ 
++/* webui-lab: <select> drawn by the library. The closed box shows the chosen option (:checked); the others are laid
++   laid in the same grid cell, hidden, so the box is as wide as the widest option, as in Chrome. The arrow is a background image. Open,
++   the library lays a <webui-popup> of <webui-option>s over the page (styleable: webui-popup, webui-option,
++   webui-option[current], webui-option[checked], webui-optgroup). */
++select {
++    display: inline-grid;
++    box-sizing: border-box;
++    border: 1px solid #767676;
++    border-radius: 3px;
++    padding: 1px 22px 1px 4px;
++    background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23333' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 6px center;
++    color: black;
++    white-space: nowrap;
++    cursor: default;
++    user-select: none;
++}
++select > option, select > optgroup > option {
++    display: block;
++    grid-area: 1 / 1;
++    visibility: hidden;
++    padding: 0;
++}
++select > option:checked, select > optgroup > option:checked {
++    visibility: visible;
++}
++select > optgroup { display: contents; }
++select:focus-visible { outline: 2px solid #4D90FE; }
+ option {
+     display: none;
+ }
++webui-popup {
++    display: block;
++    position: fixed;
++    z-index: 2147483647;
++    box-sizing: border-box;
++    overflow-y: auto;
++    background: white;
++    color: black;
++    border: 1px solid #767676;
++    border-radius: 3px;
++    box-shadow: 0 3px 8px rgba(0, 0, 0, .3);
++    padding: 2px 0;
++    font-family: system-ui, sans-serif;
++    font-size: 13.333px;
++    white-space: nowrap;
++    user-select: none;
++}
++webui-option { display: block; padding: 2px 8px; cursor: default; }
++webui-option[current] { background: #1a73e8; color: white; }
++webui-option[disabled] { color: #8c8c8c; }
++webui-optgroup { display: block; padding: 2px 6px; font-weight: bold; }
++webui-optgroup + webui-option, webui-optgroup ~ webui-option { padding-left: 16px; }
+ 
+ source {
+     display: none;
+diff --git a/packages/blitz-dom/src/document.rs b/packages/blitz-dom/src/document.rs
+index a6ed1fb..df736d4 100644
+--- a/packages/blitz-dom/src/document.rs
++++ b/packages/blitz-dom/src/document.rs
+@@ -1838,6 +1838,31 @@ impl BaseDocument {
+     pub fn set_mousedown_node_id(&mut self, node_id: Option<NodeId>) {
+         self.mousedown_node_id = node_id.and_then(|id| self.nearest_non_anonymous_ancestor(id));
+     }
++    /// webui-lab: whether an element is checked (`:checked`: a checkbox, a radio, or a `<select>`'s chosen option).
++    pub fn is_checked(&self, node_id: NodeId) -> bool {
++        self.nodes.get(node_id).and_then(|n| n.element_data()).is_some_and(|e| e.element_state.contains(ElementState::CHECKED))
++    }
++
++    /// webui-lab: marks a `<select>`'s option chosen or not (`:checked`), restyling what depends on it.
++    pub fn set_option_checked(&mut self, node_id: NodeId, checked: bool) {
++        if self.is_checked(node_id) == checked { return; }
++        self.snapshot_node_and(node_id, ElementState::CHECKED, |node| {
++            if let Some(el) = node.element_data_mut() { el.element_state.set(ElementState::CHECKED, checked); }
++            node.mark_ancestors_dirty();
++        });
++    }
++
++    /// webui-lab: shows or hides the focused element's focus ring (`:focus-visible`): on after the keyboard or a
++    /// gamepad moved the focus, off after a press of the mouse (text fields keep it, as in browsers).
++    pub fn set_focus_ring(&mut self, node_id: NodeId, on: bool) {
++        let has = self.nodes.get(node_id).and_then(|n| n.element_data()).is_some_and(|e| e.element_state.contains(ElementState::FOCUSRING));
++        if has == on { return; }
++        self.snapshot_node_and(node_id, ElementState::FOCUSRING, |node| {
++            if let Some(el) = node.element_data_mut() { el.element_state.set(ElementState::FOCUSRING, on); }
++            node.mark_ancestors_dirty();
++        });
++    }
++
+     pub fn set_focus_to(&mut self, focus_node_id: NodeId) -> bool {
+         let Some(focus_node_id) = self.nearest_non_anonymous_ancestor(focus_node_id) else {
+             return false;
+@@ -2465,8 +2490,10 @@ impl BaseDocument {
+         let mut current = Some(node_id);
+         while let Some(id) = current {
+             let node = &self.nodes[id];
+-            pos.x += node.unrounded_layout().location.x - node.scroll_offset().x as f32;
+-            pos.y += node.unrounded_layout().location.y - node.scroll_offset().y as f32;
++            // webui-lab: an element's own scroll moves its content, not itself (only its containers' scroll count).
++            let own = id == node_id;
++            pos.x += node.unrounded_layout().location.x - if own { 0.0 } else { node.scroll_offset().x as f32 };
++            pos.y += node.unrounded_layout().location.y - if own { 0.0 } else { node.scroll_offset().y as f32 };
+             current = node.containing_block();
+         }
+         (pos, *self.nodes[node_id].unrounded_layout())
+diff --git a/packages/blitz-dom/src/stylo.rs b/packages/blitz-dom/src/stylo.rs
+index 7f95aa4..4606a7b 100644
+--- a/packages/blitz-dom/src/stylo.rs
++++ b/packages/blitz-dom/src/stylo.rs
+@@ -510,7 +510,7 @@ impl selectors::Element for BlitzNode<'_> {
+             NonTSPseudoClass::FocusWithin => {
+                 self.element_state().contains(ElementState::FOCUS_WITHIN)
+             }
+-            NonTSPseudoClass::FocusVisible => false,
++            NonTSPseudoClass::FocusVisible => self.element_state().contains(ElementState::FOCUSRING),
+             NonTSPseudoClass::Fullscreen => false,
+             NonTSPseudoClass::Hover => self.element_state().contains(ElementState::HOVER),
+             NonTSPseudoClass::Indeterminate => false,
+-- 
+2.50.1 (Apple Git-155)
+

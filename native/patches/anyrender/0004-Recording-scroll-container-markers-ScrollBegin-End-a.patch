@@ -1,0 +1,92 @@
+From 1dc4641290d3a53a084edf527f453e75b25adc75 Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Sun, 8 Nov 2026 22:52:01 +0200
+Subject: [PATCH 4/7] Recording: scroll container markers (ScrollBegin/End) and
+ PaintScene hooks
+
+---
+ crates/anyrender/src/lib.rs       | 10 ++++++++++
+ crates/anyrender/src/recording.rs | 25 +++++++++++++++++++++++++
+ 2 files changed, 35 insertions(+)
+
+diff --git a/crates/anyrender/src/lib.rs b/crates/anyrender/src/lib.rs
+index 2556ffb..09916d5 100644
+--- a/crates/anyrender/src/lib.rs
++++ b/crates/anyrender/src/lib.rs
+@@ -218,6 +218,14 @@ pub trait PaintScene: RenderContext {
+     /// webui-lab: marks the end of a composited element.
+     fn composited_end(&mut self) {}
+ 
++    /// webui-lab: marks the start of a scroll container's content painted unscrolled (id, scroll offset and clip box in
++    /// device px). Painters that don't scroll on the GPU ignore it (and get the content unscrolled: only embedders that
++    /// asked for it get it).
++    fn scroll_begin(&mut self, _id: u64, _offset: kurbo::Vec2, _clip: kurbo::Rect) {}
++
++    /// webui-lab: marks the end of a scroll container's content.
++    fn scroll_end(&mut self) {}
++
+     /// Strokes a shape using the specified style and brush.
+     fn stroke<'a>(
+         &mut self,
+@@ -286,6 +294,8 @@ pub trait PaintScene: RenderContext {
+                 RenderCommand::PopLayer => self.pop_layer(),
+                 RenderCommand::CompositedBegin(cmd) => self.composited_begin(cmd.id, scene_transform * cmd.world, cmd.local),
+                 RenderCommand::CompositedEnd => self.composited_end(),
++                RenderCommand::ScrollBegin(cmd) => self.scroll_begin(cmd.id, cmd.offset, scene_transform.transform_rect_bbox(cmd.clip)),
++                RenderCommand::ScrollEnd => self.scroll_end(),
+                 RenderCommand::Stroke(cmd) => self.stroke(
+                     &cmd.style,
+                     scene_transform * cmd.transform,
+diff --git a/crates/anyrender/src/recording.rs b/crates/anyrender/src/recording.rs
+index d209561..5296478 100644
+--- a/crates/anyrender/src/recording.rs
++++ b/crates/anyrender/src/recording.rs
+@@ -35,6 +35,21 @@ pub enum RenderCommand<Font = FontData, Brush = Paint> {
+     CompositedBegin(CompositedCommand),
+     /// webui-lab: the end of a composited element.
+     CompositedEnd,
++    /// webui-lab: what follows, up to `ScrollEnd`, is a scroll container's content painted unscrolled (the embedder
++    /// moves it by the container's scroll offset on the GPU). Painters that don't do this ignore both.
++    ScrollBegin(ScrollCommand),
++    /// webui-lab: the end of a scroll container's content.
++    ScrollEnd,
++}
++
++/// webui-lab: a scroll container whose content is painted unscrolled: its node id, its scroll offset when painted (device
++/// px) and its clip box on the page (device px), where scrolling changes the picture.
++#[derive(Clone, Debug, PartialEq)]
++#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
++pub struct ScrollCommand {
++    pub id: u64,
++    pub offset: kurbo::Vec2,
++    pub clip: Rect,
+ }
+ 
+ /// webui-lab: an element composited on its own: its node id, its world transform as painted (its own CSS transform
+@@ -60,6 +75,8 @@ impl RenderCommand {
+             RenderCommand::BoxShadow(cmd) => cmd.transform = transform * cmd.transform,
+             RenderCommand::CompositedBegin(cmd) => cmd.world = transform * cmd.world,
+             RenderCommand::CompositedEnd => {}
++            RenderCommand::ScrollBegin(cmd) => cmd.clip = transform.transform_rect_bbox(cmd.clip),
++            RenderCommand::ScrollEnd => {}
+         };
+ 
+         self
+@@ -243,6 +260,14 @@ impl PaintScene for Scene {
+         self.commands.push(RenderCommand::CompositedEnd);
+     }
+ 
++    fn scroll_begin(&mut self, id: u64, offset: kurbo::Vec2, clip: Rect) {
++        self.commands.push(RenderCommand::ScrollBegin(ScrollCommand { id, offset, clip }));
++    }
++
++    fn scroll_end(&mut self) {
++        self.commands.push(RenderCommand::ScrollEnd);
++    }
++
+     fn stroke<'a>(
+         &mut self,
+         style: &Stroke,
+-- 
+2.50.1 (Apple Git-155)
+

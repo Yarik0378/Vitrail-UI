@@ -1,0 +1,33 @@
+[package]
+name = "vitrail"
+version = "0.1.0"
+edition = "2024"
+license-file = "../../LICENSE.md"
+publish = false
+workspace = "../blitz"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# Blitz's overlay scrollbars (shown while scrolling, fading, draggable). Off: they repaint the page on every scroll
+# step, which the GPU scrolling avoids; scrollbars are to be drawn by the GPU painter from the scroll states instead.
+scrollbars = ["blitz-paint/scrollbars"]
+
+[dependencies]
+anyrender = { workspace = true }
+anyrender_vello_cpu = { workspace = true, features = ["multithreading"] }
+blitz-dom = { workspace = true, features = ["default", "floats"] }
+blitz-html = { workspace = true }
+blitz-traits = { workspace = true }
+blitz-paint = { workspace = true, features = ["svg", "apple-font-embolden"] }
+peniko = { workspace = true }
+image = { workspace = true, features = ["png", "jpeg", "webp", "gif"] }
+lyon_tessellation = "1.0"
+skrifa = { workspace = true }
+keyboard-types = { workspace = true }
+smol_str = { workspace = true }
+rquickjs = { version = "0.14.0", features = ["loader"] }
+
+[dev-dependencies]
+png = { workspace = true }

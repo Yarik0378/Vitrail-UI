@@ -1,0 +1,46 @@
+From 860f0d81a85760eaea389dcbd6ebf8d6e68cbbf6 Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Mon, 9 Nov 2026 01:12:24 +0200
+Subject: [PATCH 10/13] animation_snapshot: CSS animations' and transitions'
+ states for animation events
+
+---
+ packages/blitz-dom/src/stylo.rs | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/packages/blitz-dom/src/stylo.rs b/packages/blitz-dom/src/stylo.rs
+index 0602a3a..7f95aa4 100644
+--- a/packages/blitz-dom/src/stylo.rs
++++ b/packages/blitz-dom/src/stylo.rs
+@@ -1646,5 +1646,28 @@ impl crate::BaseDocument {
+         }
+         Some(nodes)
+     }
++
++    /// Every running CSS animation and transition, for animation events: (node, true for a transition, the animation's
++    /// name or the transition's property, its state: 0 pending, 1 running, 2 paused, 3 finished, 4 canceled, the
++    /// current iteration, the active time in seconds at `now`). Pseudo-elements' are left out.
++    pub fn animation_snapshot(&self, now: f64) -> Vec<(NodeId, bool, String, u8, f64, f64)> {
++        use style::animation::KeyframesIterationState;
++        let state = |s: &AnimationState| match s { AnimationState::Pending => 0, AnimationState::Running => 1, AnimationState::Paused(_) => 2, AnimationState::Finished => 3, AnimationState::Canceled => 4 };
++        let sets = self.animations.sets.read();
++        let mut out = Vec::new();
++        for (key, set) in sets.iter() {
++            if key.pseudo_element.is_some() { continue; }
++            let node = NodeId::from_u64(key.node.id() as u64);
++            for a in &set.animations {
++                let iteration = match a.iteration_state { KeyframesIterationState::Infinite(i) | KeyframesIterationState::Finite(i, _) => i };
++                out.push((node, false, a.name.to_string(), state(&a.state), iteration, (now - a.started_at - a.delay).max(0.0)));
++            }
++            for t in &set.transitions {
++                let name = t.property_animation.property_id().name().to_string();
++                out.push((node, true, name, state(&t.state), 0.0, (now - t.start_time - t.delay).max(0.0)));
++            }
++        }
++        out
++    }
+ }
+ 
+-- 
+2.50.1 (Apple Git-155)
+

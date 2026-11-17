@@ -1,0 +1,39 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- Preact and its hooks unchanged (vendor/), written with htm (no build step): state, lists, conditions, events, style
+     objects, the engine bridge. -->
+<style>
+  body { margin: 0; font: 16px/1.3 sans-serif; color: #f6eedc; background: #122722; }
+  .app { padding: 16px; display: flex; flex-direction: column; gap: 10px; width: 360px; }
+  .res { display: flex; gap: 12px; }
+  .cell { padding: 4px 8px; border-radius: 6px; background: #1b362f; }
+  .cell.low { background: #5a2a20; }
+</style></head>
+<body>
+<div id="root"></div>
+<script src="vendor/preact-10.29.8.min.umd.js"></script>
+<script src="vendor/preact-hooks-10.29.8.umd.js"></script>
+<script src="vendor/htm-3.1.1.umd.js"></script>
+<script>
+  // In a browser (Chrome references) there is no game: a stand-in for its bridge.
+  window.engine ??= { on() {}, off() {}, trigger() {} };
+  const { h, render } = preact;
+  const { useState, useEffect } = preactHooks;
+  const html = htm.bind(h);
+  function Cell({ name, value }) {
+    return html`<div class=${'cell' + (value < 10 ? ' low' : '')} id=${'res-' + name}>${name}: ${value}</div>`;
+  }
+  function App() {
+    const [stock, setStock] = useState({ wood: 30, stone: 5 });
+    const [turn, setTurn] = useState(1);
+    useEffect(() => { engine.on('stock', (s) => setStock(s)); engine.trigger('ready'); }, []);
+    return html`<div class="app">
+      <div id="turn" style=${{ fontSize: '24px', fontWeight: 'bold' }}>Turn ${turn}</div>
+      <div class="res">${Object.entries(stock).map(([k, v]) => html`<${Cell} key=${k} name=${k} value=${v} />`)}</div>
+      <button id="end" onClick=${() => { setTurn(turn + 1); engine.trigger('endTurn', turn); }}>End turn</button>
+      ${turn > 2 && html`<div id="late">late game</div>`}
+    </div>`;
+  }
+  render(html`<${App} />`, document.getElementById('root'));
+</script>
+</body></html>

@@ -1,0 +1,15 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+html, body { margin: 0; height: 100%; font: 22px system-ui, sans-serif; color: #b8f5d0; }
+body { background: radial-gradient(circle at 50% 40%, #12302a, #050c0a); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
+h1 { font: 600 40px ui-monospace, monospace; margin: 0; letter-spacing: .08em; }
+button { font: 600 24px system-ui, sans-serif; padding: 14px 28px; border-radius: 10px; color: #06120e; background: #6fe0a8; border: 0; }
+button:hover { background: #a6f5cc; }
+#n { font: 64px ui-monospace, monospace; }
+</style></head>
+<body>
+  <h1>TERMINAL 7</h1>
+  <div id="n">0</div>
+  <button id="b" data-action="press">Press</button>
+  <script>let n = 0; document.getElementById('b').addEventListener('click', () => { document.getElementById('n').textContent = ++n; });</script>
+</body></html>

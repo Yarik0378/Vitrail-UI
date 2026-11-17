@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<!-- Laid out at 960 css px and painted at scale 2, so GitHub (about 880 px wide) shows it near 1:1. -->
+<style>
+@font-face { font-family: "Alegreya Sans"; src: url(AlegreyaSans-Medium.ttf); font-weight: 500; }
+@font-face { font-family: "Alegreya Sans"; src: url(AlegreyaSans-Bold.ttf); font-weight: 700; }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 960px; height: 400px; overflow: hidden; }
+body { font: 500 15px/1.25 "Alegreya Sans", sans-serif; color: #efe6d0; position: relative; background: #141b16; }
+.world { position: absolute; left: -330px; top: -290px; width: 1360px; height: 765px; }
+.shade { position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(14,20,14,.94) 0%, rgba(14,20,14,.82) 40%, rgba(14,20,14,.25) 70%, rgba(14,20,14,.35) 100%); }
+.vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at 82% 50%, rgba(10,14,8,.45), rgba(10,14,8,0) 65%); }
+
+.left { position: absolute; left: 48px; top: 0; bottom: 0; width: 470px; display: flex; flex-direction: column; justify-content: center; }
+.kicker { font-size: 14px; letter-spacing: .22em; color: #e2b866; font-weight: 700; }
+h1 { font-size: 72px; line-height: 1; font-weight: 700; margin-top: 8px; text-shadow: 0 4px 24px rgba(0,0,0,.5); }
+h1 span { color: #e2b866; }
+.tag { font-size: 20px; color: #ddd4bc; margin-top: 12px; }
+.chips { display: flex; gap: 8px; margin-top: 22px; }
+.chip { padding: 6px 13px; border-radius: 999px; font-size: 15px; font-weight: 700;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(236,226,196,.24); }
+.chip.gold { color: #1d241f; border-color: #f3d48e; background: linear-gradient(180deg, #f2d087, #cf9a48); }
+
+.right { position: absolute; right: 48px; top: 0; bottom: 0; width: 300px; display: flex; flex-direction: column;
+  justify-content: center; gap: 16px; }
+.glass { border-radius: 16px; border: 1px solid rgba(236,226,196,.26);
+  box-shadow: 0 16px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.1); }
+.panel { padding: 16px 18px; background: rgba(22,30,22,.62); backdrop-filter: blur(14px) saturate(1.1); }
+.panel h2 { font-size: 20px; font-weight: 700; display: flex; justify-content: space-between; align-items: baseline; }
+.panel h2 span { font-size: 14px; color: #c3bba2; font-weight: 500; }
+.row { display: flex; justify-content: space-between; margin-top: 10px; font-size: 16px; }
+.row b { color: #f0cf86; }
+.bar { height: 6px; border-radius: 3px; background: rgba(0,0,0,.4); margin-top: 5px; overflow: hidden; }
+.bar div { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #c9814f, #e2b866); }
+.code { padding: 14px 18px; background: rgba(20,24,14,.8); backdrop-filter: blur(18px) saturate(.8);
+  font: 500 13.5px/1.55 Menlo, monospace; color: #efe6d0; white-space: nowrap; }
+.code b { color: #e2b866; font-weight: 500; } .code i { color: #d99a6c; font-style: normal; }
+</style>
+</head>
+<body>
+<img class="world" src="world.jpg">
+<div class="shade"></div>
+<div class="vignette"></div>
+<div class="left">
+  <div class="kicker">GAME UI FOR UNITY</div>
+  <h1>Vitrail <span>UI</span></h1>
+  <div class="tag">HTML, CSS and JavaScript interfaces, painted by your game's GPU. No browser inside.</div>
+  <div class="chips"><div class="chip gold">Real CSS engine</div><div class="chip">GPU painter</div><div class="chip">&lt; 0.3 ms a change</div></div>
+</div>
+<div class="right">
+  <div class="glass panel">
+    <h2>Frame budget <span>main thread, 4K</span></h2>
+    <div class="row"><span>Hover</span><b>0.10 ms</b></div><div class="bar"><div style="width: 22%"></div></div>
+    <div class="row"><span>Wheel step</span><b>0.21 ms</b></div><div class="bar"><div style="width: 44%"></div></div>
+    <div class="row"><span>20 animations</span><b>0.10 ms</b></div><div class="bar"><div style="width: 22%"></div></div>
+  </div>
+  <div class="glass code">.panel {<br>&nbsp;&nbsp;<b>backdrop-filter</b>: <i>blur(14px)</i>;<br>&nbsp;&nbsp;<b>border-radius</b>: <i>16px</i>;<br>}</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+body { display: flex; flex-wrap: wrap; gap: 14px; padding: 14px; width: 760px; }
+.b { width: 110px; height: 80px; background: linear-gradient(135deg, #e0a050, #3a8a70 60%, #1d3a60); }
+.circle { clip-path: circle(38px at 50% 50%); }
+.ellipse { clip-path: ellipse(50px 30px at 50% 50%); }
+.poly { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.inset { clip-path: inset(10px 14px round 12px); }
+.star { clip-path: polygon(50% 2%, 61% 36%, 98% 36%, 68% 58%, 79% 92%, 50% 72%, 21% 92%, 32% 58%, 2% 36%, 39% 36%); }
+.path { clip-path: path('M10 70 Q55 -10 100 70 Z'); }
+.mlin { mask-image: linear-gradient(90deg, #000, transparent); }
+.mrad { mask-image: radial-gradient(circle, #000 30%, transparent 70%); }
+.mring { border-radius: 50%; width: 80px; mask: radial-gradient(circle, transparent 24px, #000 25px, #000 34px, transparent 35px); }
+.mcon { mask-image: repeating-linear-gradient(45deg, #000 0 6px, transparent 6px 12px); }
+.ovf { border-radius: 24px; overflow: hidden; background: #234; }
+.ovf div { width: 140px; height: 50px; margin: 15px -10px; background: linear-gradient(90deg, #f4d080, #c05040); transform: rotate(-12deg); }
+</style></head><body>
+<div class="b circle"></div><div class="b ellipse"></div><div class="b poly"></div><div class="b inset"></div><div class="b star"></div><div class="b path"></div>
+<div class="b mlin"></div><div class="b mrad"></div><div class="b mring"></div><div class="b mcon"></div><div class="b ovf"><div></div></div>
+</body></html>

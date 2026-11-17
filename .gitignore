@@ -1,0 +1,23 @@
+# Builds and caches
+native/blitz/
+native/anyrender/
+native/**/target/
+unity/Library/
+unity/Temp/
+unity/Logs/
+unity/Build/
+unity/obj/
+unity/UserSettings/
+unity/*.log
+unity/*.csproj
+unity/*.sln
+unity/*.slnx
+.DS_Store
+# Renders made by the comparison runs (the references in tests/ref are kept)
+tests/out/
+tests/unity/
+unity/.vscode/
+# The lab project gets its libraries from native/build.sh
+unity/Assets/Vitrail/Plugins/**/*.dylib
+unity/Assets/Vitrail/Plugins/**/*.dll
+*.log

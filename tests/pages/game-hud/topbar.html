@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<!--
+  A strategy game's top bar, a sample and benchmark page. A game fills it through ids and classes: numbers, which resources show, the advisors' progress
+  and alerts, and the frame's outline for the screen's width. Save this file while the game runs and it reloads.
+-->
+<link rel="stylesheet" href="topbar.css">
+</head>
+<body>
+<div class="frame-blur" id="frame-blur"></div>
+<svg class="frame" id="frame" viewBox="0 0 1422 80">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a4a43"/><stop offset=".12" stop-color="#1b362f"/><stop offset=".55" stop-color="#122722"/><stop offset="1" stop-color="#0a1815"/></linearGradient>
+    <linearGradient id="cu" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2c4a43"/><stop offset=".18" stop-color="#6f9488"/><stop offset=".5" stop-color="#4e7068"/><stop offset=".82" stop-color="#6f9488"/><stop offset="1" stop-color="#2c4a43"/></linearGradient>
+    <filter id="sh" x="-5%" y="-20%" width="110%" height="160%"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity=".5"/></filter>
+  </defs>
+  <path id="p-body" filter="url(#sh)" fill-opacity=".8" fill="url(#g)" d="M0 0H1422V68H1236Q1220 68 1214 60Q1206 50 1188 50H262Q246 50 240 62Q232 76 214 76H0Z"/>
+  <path id="p-top" d="M0 1.5H1422" stroke="#fff" stroke-opacity=".12" stroke-width="1"/>
+  <path id="p-engr" d="M0 70H212Q228 70 235 58Q241 46 258 46H1184Q1202 46 1209 56Q1215 64 1232 64H1422" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="1"/>
+  <path id="p-light" d="M0 71H212Q228 71 235 59Q241 47 258 47H1184Q1202 47 1209 57Q1215 65 1232 65H1422" fill="none" stroke="#fff" stroke-opacity=".05" stroke-width="1"/>
+  <path id="p-accent" d="M0 74H214Q232 74 238 62Q245 49 262 49H1188Q1206 49 1213 59Q1219 67 1236 67H1422" fill="none" stroke="url(#cu)" stroke-width="1.4" stroke-opacity=".95"/>
+  <path id="p-edge" d="M0 76H214Q232 76 240 62Q246 50 262 50H1188Q1206 50 1214 60Q1220 68 1236 68H1422" fill="none" stroke="#0c0b0a" stroke-width="2" stroke-opacity=".7"/>
+</svg>
+
+<div class="res" id="res">
+  <div class="cell" id="cell-water" data-action="res-water"><img src="icons/res/water.png"><span class="num"><span class="cap" id="water-cap">40/</span><span class="v" id="water">30</span></span><i id="water-d">0</i></div>
+  <div class="cell" id="cell-food" data-action="res-food"><img src="icons/res/food.png"><span class="num"><span class="cap" id="food-cap">46/</span><span class="v" id="food">30</span></span><i id="food-d">0</i></div>
+  <div class="cell" id="cell-wood" data-action="res-wood"><img src="icons/res/wood.png"><span class="num"><span class="cap" id="wood-cap">52/</span><span class="v" id="wood">30</span></span><i id="wood-d">0</i></div>
+  <div class="cell" id="cell-stone" data-action="res-stone"><img src="icons/res/stone.png"><span class="num"><span class="cap" id="stone-cap">30/</span><span class="v" id="stone">30</span></span><i id="stone-d">0</i></div>
+  <div class="cell" id="cell-planks" data-action="res-planks"><img src="icons/res/planks.png"><span class="num"><span class="cap" id="planks-cap">24/</span><span class="v" id="planks">30</span></span><i id="planks-d">0</i></div>
+  <div class="cell" id="cell-iron" data-action="res-iron"><img src="icons/res/iron.png"><span class="num"><span class="cap" id="iron-cap">8/</span><span class="v" id="iron">30</span></span><i id="iron-d">0</i></div>
+  <div class="cell" id="cell-horses" data-action="res-horses"><img src="icons/res/horses.png"><span class="num"><span class="cap" id="horses-cap">3/</span><span class="v" id="horses">30</span></span><i id="horses-d">0</i></div>
+  <div class="cell" id="cell-gold" data-action="gold"><img src="icons/res/gold.png"><span class="v" id="gold">0</span><i id="gold-d">0</i>
+    <div class="tip" id="gold-tip">Золото</div></div>
+  <div class="cell" id="cell-science" data-action="science"><img src="icons/res/science.png"><span class="v" id="science">0</span><i class="sc" id="science-d">+0</i>
+    <div class="tip" id="science-tip">Відкрити дерево знань</div></div>
+  <div class="cell" id="cell-people"><img src="icons/res/people.png"><span class="v" id="people">0</span></div>
+</div>
+
+<div class="rings" id="rings">
+  <div class="ring" id="ring-science" data-action="advisor-science"><div class="p"></div><img src="icons/res/science.png"><div class="badge"></div><div class="cap" id="ring-science-cap">Наука</div></div>
+  <div class="ring" id="ring-units" data-action="advisor-units"><div class="p"></div><img src="icons/notes/units.png"><div class="badge"></div><div class="cap" id="ring-units-cap">Загони</div></div>
+  <div class="ring" id="ring-culture" data-action="advisor-culture"><div class="p"></div><img src="icons/notes/culture.svg"><div class="badge"></div><div class="cap" id="ring-culture-cap">Культура</div></div>
+  <div class="ring" id="ring-seasons" data-action="advisor-seasons"><div class="p"></div><img id="season-icon" src="icons/notes/spring.svg"><div class="badge"></div><div class="cap" id="ring-seasons-cap">Пори року</div></div>
+</div>
+
+<div class="btns">
+  <div class="btn" data-action="pedia"><svg viewBox="0 0 24 24"><path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z"/></svg><div class="tip">Довідка: усе про гру (H)</div></div>
+  <div class="btn" data-action="legend"><svg viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14"/></svg><div class="tip">Легенда зон (L)</div></div>
+  <div class="btn" data-action="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><div class="tip">Налаштування: графіка, звук, мова</div></div>
+  <div class="btn" data-action="menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg><div class="tip">Меню гри (Esc)</div></div>
+</div>
+</body>
+</html>

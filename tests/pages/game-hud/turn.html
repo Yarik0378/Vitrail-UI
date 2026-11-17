@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<!--
+  A strategy game's turn panel: the turn's number, the season and year, the dial that ends the turn (the year's ring of seasons
+  with the turn's mark, and in the middle an arrow or what the turn asks for first), the words under it and «Все одно
+  завершити». The same look as the top bar (topbar.css).
+-->
+<link rel="stylesheet" href="turn.css">
+</head>
+<body>
+<div class="panel" id="panel">
+  <div class="title" id="turn">Хід 1</div>
+  <div class="season" id="season" data-action="seasons"><span id="season-text">Весна · рік 1</span><div class="tip" id="season-tip">Пори року</div></div>
+  <div class="dial" id="dial" data-action="end">
+    <div class="seasons" id="seasons"></div>
+    <div class="spin" id="warn"><div class="warn"></div></div>
+    <div class="spin" id="mark"><div class="mark"></div></div>
+    <div class="core">
+      <div class="glow"></div>
+      <svg class="arrow" viewBox="0 0 40 40"><path d="M9 20H30M21 11l9 9-9 9"/></svg>
+      <img class="icon" id="icon" src="icons/res/science.png">
+    </div>
+  </div>
+  <div class="tip" id="dial-tip">Enter — завершити хід</div>
+  <div class="caption" id="caption">Завершити хід</div>
+  <div class="skip" id="skip" data-action="anyway">Все одно завершити</div>
+  <div class="enter" id="enter">Enter</div>
+</div>
+</body>
+</html>

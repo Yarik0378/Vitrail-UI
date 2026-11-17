@@ -1,0 +1,48 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="inventory.css"></head>
+<body>
+  <section class="window">
+    <header><h2>Inventory</h2><span id="count"></span></header>
+    <div class="equip">
+      <div class="slot big" data-kind="weapon"><em>Weapon</em></div>
+      <div class="slot big" data-kind="armour"><em>Armour</em></div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+  <script>
+    const kinds = [['Sword', 'weapon', '#c9c2b0'], ['Shield', 'armour', '#8aa0b8'], ['Bread', 'food', '#d9a441'], ['Gem', 'gem', '#6fd0c0'], ['Axe', 'weapon', '#b0a080']];
+    const grid = document.getElementById('grid');
+    for (let i = 0; i < 300; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'slot';
+      if (i % 3 === 0) {
+        const [name, kind, color] = kinds[i % kinds.length];
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.draggable = true;
+        item.setAttribute('draggable', 'true');
+        item.dataset.kind = kind;
+        item.style.background = color;
+        item.textContent = name;
+        slot.appendChild(item);
+      }
+      grid.appendChild(slot);
+    }
+    const count = () => { document.getElementById('count').textContent = document.querySelectorAll('.item').length + ' items'; };
+    count();
+    let dragged = null;
+    document.addEventListener('dragstart', (e) => { dragged = e.target.closest('.item'); e.dataTransfer.setData('text/plain', dragged.textContent); dragged.classList.add('lifted'); });
+    document.addEventListener('dragend', () => { dragged?.classList.remove('lifted'); dragged = null; document.querySelectorAll('.over').forEach((s) => s.classList.remove('over')); });
+    // A slot takes an item when it is empty and, for equipment, of its kind.
+    const takes = (slot) => slot && !slot.querySelector('.item') && (!slot.dataset.kind || slot.dataset.kind === dragged?.dataset.kind);
+    document.addEventListener('dragover', (e) => { const s = e.target.closest('.slot'); if (takes(s)) e.preventDefault(); });
+    document.addEventListener('dragenter', (e) => { const s = e.target.closest('.slot'); if (takes(s)) s.classList.add('over'); });
+    document.addEventListener('dragleave', (e) => e.target.closest('.slot')?.classList.remove('over'));
+    document.addEventListener('drop', (e) => {
+      const s = e.target.closest('.slot');
+      s.classList.remove('over');
+      s.appendChild(dragged);
+      engine.trigger('moved', dragged.textContent, s.dataset.kind || 'bag');
+    });
+  </script>
+</body></html>

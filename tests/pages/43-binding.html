@@ -1,0 +1,20 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- Data binding with no script: the game sends models (WebPanel.SetModel), data-bind-* attributes show them. -->
+<style>
+  body { margin: 0; font: 16px/1.3 sans-serif; color: #f6eedc; background: #122722; }
+  .app { padding: 16px; display: flex; flex-direction: column; gap: 10px; width: 360px; }
+  .cell { padding: 4px 8px; border-radius: 6px; background: #1b362f; }
+  .cell.low { background: #5a2a20; }
+  .bar { height: 8px; background: #2a4a43; } .bar > div { height: 100%; background: #8fbf73; }
+</style></head>
+<body>
+<div class="app">
+  <div id="title" data-bind-value="Turn {{game.turn}} · {{game.season}}"></div>
+  <div id="gold" data-bind-value="{{player.gold}}" data-bind-class-toggle="low:{{player.gold < 10}}" class="cell"></div>
+  <div class="bar"><div id="hp" data-bind-style-width="{{player.hp * 100}}%"></div></div>
+  <img id="icon" data-bind-attr-alt="{{player.name}}">
+  <div id="warn" data-bind-if="{{player.gold < 10}}">Poor!</div>
+  <ul id="items"><li data-bind-for="i, it:{{player.items}}" data-bind-class="{{it.kind}}" data-bind-click="engine.trigger('pick', i, it.name)"><b data-bind-value="{{it.name}}"></b> ×<span data-bind-value="{{it.count}}"></span></li></ul>
+</div>
+</body></html>

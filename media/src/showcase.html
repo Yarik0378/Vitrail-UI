@@ -1,0 +1,181 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family: "Alegreya Sans"; src: url(AlegreyaSans-Medium.ttf); font-weight: 500; }
+@font-face { font-family: "Alegreya Sans"; src: url(AlegreyaSans-Bold.ttf); font-weight: 700; }
+:root {
+  --glass: rgba(24, 34, 28, .62);
+  --glass-strong: rgba(20, 28, 23, .78);
+  --edge: rgba(236, 226, 196, .22);
+  --text: #efe8d4;
+  --muted: #b8b19a;
+  --gold: #e2b866;
+  --copper: #c9814f;
+  --good: #9fd27a;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1280px; height: 720px; overflow: hidden; }
+body { font: 500 15px/1.25 "Alegreya Sans", sans-serif; color: var(--text); position: relative; }
+.world { position: absolute; left: -190px; top: -50px; width: 1480px; height: 833px; }
+
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--edge);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .08);
+}
+
+/* Top bar */
+.bar { position: absolute; left: 16px; right: 16px; top: 14px; height: 48px; border-radius: 14px; background: rgba(18,24,16,.74);
+  display: flex; align-items: center; padding: 0 10px 0 16px; gap: 20px; }
+.res { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 17px; }
+.res img { width: 26px; height: 26px; }
+.res small { font-weight: 700; font-size: 15px; color: var(--good); text-shadow: 0 1px 2px rgba(0,0,0,.65); }
+.res small.bad { color: #e48a6c; }
+.sep { width: 1px; height: 24px; background: var(--edge); }
+.spacer { flex: 1; }
+.turn { font-weight: 700; color: var(--gold); letter-spacing: .04em; font-size: 16px; }
+.round { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.02)); border: 1px solid var(--edge); }
+.round img { width: 18px; height: 18px; }
+
+/* Build card */
+.card { position: absolute; right: 16px; top: 78px; width: 330px; border-radius: 16px; padding: 16px; }
+.card h2 { font-size: 22px; font-weight: 700; display: flex; justify-content: space-between; align-items: baseline; }
+.card h2 span { font-size: 14px; color: #d6cdb3; font-weight: 500; }
+.tabs { display: flex; gap: 6px; margin: 12px 0 12px; }
+.tab { padding: 5px 12px; border-radius: 999px; font-size: 13px; color: var(--muted); border: 1px solid transparent; }
+.tab.on { color: #1d241f; background: linear-gradient(180deg, #f0cf86, #d6a24f); font-weight: 700; }
+.item { display: grid; grid-template-columns: 48px 1fr auto; gap: 12px; align-items: center; padding: 10px;
+  border-radius: 12px; margin-bottom: 8px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.05); }
+.item.hover { background: linear-gradient(90deg, rgba(226,184,102,.20), rgba(226,184,102,.05));
+  border-color: rgba(226,184,102,.75); box-shadow: 0 0 0 3px rgba(226,184,102,.15); }
+.thumb { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 30% 25%, #4f6b52, #233226); border: 1px solid var(--edge); }
+.thumb img { width: 28px; height: 28px; }
+.item b { display: block; font-size: 16px; }
+.item i { font-style: normal; font-size: 13px; color: var(--muted); }
+.cost { display: flex; gap: 8px; font-weight: 700; font-size: 14px; }
+.cost span { display: flex; align-items: center; gap: 3px; }
+.cost img { width: 18px; height: 18px; }
+.progress { margin-top: 6px; height: 8px; border-radius: 4px; background: rgba(0,0,0,.35); overflow: hidden; }
+.progress div { width: 64%; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--copper), var(--gold)); }
+.foot { display: flex; justify-content: space-between; margin-top: 4px; font-size: 13px; color: var(--muted); }
+
+/* Tooltip */
+.tip { position: absolute; right: 362px; top: 252px; width: 250px; border-radius: 12px; padding: 12px 14px; }
+.tip::after { content: ""; position: absolute; right: -7px; top: 26px; width: 12px; height: 12px; transform: rotate(45deg);
+  background: rgba(30,40,32,.9); border-top: 1px solid var(--edge); border-right: 1px solid var(--edge); }
+.tip b { color: var(--gold); font-size: 17px; }
+.tip p { font-size: 14px; color: var(--muted); margin-top: 4px; }
+.tip .row { display: flex; justify-content: space-between; margin-top: 8px; font-size: 14px; }
+.tip .row em { font-style: normal; color: var(--good); font-weight: 700; }
+
+/* Unit panel */
+.unit { position: absolute; left: 16px; bottom: 16px; width: 380px; border-radius: 16px; padding: 14px 16px;
+  display: grid; grid-template-columns: 64px 1fr; gap: 14px; }
+.portrait { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 35% 30%, #8a4b34, #3a1f17); border: 2px solid var(--gold);
+  box-shadow: 0 0 18px rgba(226,184,102,.35); }
+.portrait img { width: 36px; height: 36px; }
+.unit h3 { font-size: 20px; font-weight: 700; }
+.unit .sub { font-size: 13px; color: var(--muted); }
+.hp { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; margin-top: 8px; }
+.hp div { height: 7px; border-radius: 2px; background: var(--good); }
+.hp div.off { background: rgba(255,255,255,.15); }
+.actions { grid-column: 1 / 3; display: flex; gap: 8px; }
+.btn { flex: 1; text-align: center; padding: 8px 0; border-radius: 10px; font-weight: 700; font-size: 14px;
+  border: 1px solid var(--edge); background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.02)); }
+.btn.main { color: #1d241f; border-color: #f3d48e; background: linear-gradient(180deg, #f2d087, #cf9a48);
+  box-shadow: 0 4px 14px rgba(207,154,72,.35); }
+
+/* Toast */
+.toast { position: absolute; left: 50%; top: 80px; transform: translateX(-50%); padding: 9px 18px 9px 12px;
+  border-radius: 999px; display: flex; align-items: center; gap: 10px; font-size: 15px; }
+.toast .dot { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #a6d98a, #5d9a4a); }
+.toast .dot img { width: 16px; height: 16px; }
+.toast b { color: var(--gold); }
+
+/* Turn dial */
+.dial { position: absolute; right: 16px; bottom: 16px; width: 200px; border-radius: 16px; padding: 12px 14px 14px; text-align: center; }
+.dial h3 { font-size: 24px; font-weight: 700; }
+.dial .sub { font-size: 13px; color: var(--muted); }
+.ring { width: 92px; height: 92px; margin: 8px auto 10px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; background: conic-gradient(var(--copper) 0%, var(--gold) 72%, rgba(255,255,255,.12) 72% 100%); }
+.ring div { width: 76px; height: 76px; border-radius: 50%; background: #1c2720; display: flex; align-items: center;
+  justify-content: center; border: 1px solid var(--edge); }
+.ring img { width: 34px; height: 34px; }
+.end { margin-top: 4px; padding: 8px 0; border-radius: 10px; font-weight: 700; color: #1d241f;
+  background: linear-gradient(180deg, #f2d087, #cf9a48); }
+</style>
+</head>
+<body>
+<img class="world" src="world.jpg">
+
+<div class="bar glass">
+  <div class="res"><img src="icons/water.png">30 <small>+4</small></div>
+  <div class="res"><img src="icons/food.png">42 <small>+3</small></div>
+  <div class="res"><img src="icons/wood.png">18 <small>+2</small></div>
+  <div class="res"><img src="icons/stone.png">12 <small class="bad">−1</small></div>
+  <div class="res"><img src="icons/iron.png">6</div>
+  <div class="sep"></div>
+  <div class="res"><img src="icons/gold.png">120 <small>+8</small></div>
+  <div class="res"><img src="icons/science.png">5 <small>+2</small></div>
+  <div class="res"><img src="icons/people.png">14</div>
+  <div class="spacer"></div>
+  <div class="round"><img src="icons/home.svg"></div>
+  <div class="round"><img src="icons/gear.svg"></div>
+</div>
+
+<div class="toast glass"><div class="dot"><img src="icons/home.svg"></div><span><b>Riverside</b> has grown to 6 people</span></div>
+
+<div class="card glass">
+  <h2>Build <span>Riverside</span></h2>
+  <div class="tabs"><div class="tab on">Housing</div><div class="tab">Food</div><div class="tab">Crafts</div><div class="tab">Defence</div></div>
+  <div class="item">
+    <div class="thumb"><img src="icons/home.svg"></div>
+    <div><b>Cottage</b><i>+2 people, needs a road</i></div>
+    <div class="cost"><span><img src="icons/wood.png">6</span></div>
+  </div>
+  <div class="item hover">
+    <div class="thumb"><img src="icons/planks.png"></div>
+    <div><b>Sawmill</b><i>Wood into planks</i></div>
+    <div class="cost"><span><img src="icons/wood.png">8</span><span><img src="icons/stone.png">4</span></div>
+  </div>
+  <div class="item">
+    <div class="thumb"><img src="icons/food.png"></div>
+    <div><b>Granary</b><i>Keeps food through winter</i></div>
+    <div class="cost"><span><img src="icons/wood.png">10</span></div>
+  </div>
+  <div class="foot"><span>Builders at work</span><span>2 turns</span></div>
+  <div class="progress"><div></div></div>
+</div>
+
+<div class="tip glass">
+  <b>Sawmill</b>
+  <p>Turns 2 wood into 1 plank each turn. Plank buildings last longer.</p>
+  <div class="row"><span>Planks per turn</span><em>+1</em></div>
+  <div class="row"><span>Upkeep</span><span>1 food</span></div>
+</div>
+
+<div class="unit glass">
+  <div class="portrait"><img src="icons/warrior.svg"></div>
+  <div>
+    <h3>Spearmen</h3>
+    <div class="sub">Level 2 · 3 of 3 moves</div>
+    <div class="hp"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div class="off"></div><div class="off"></div></div>
+  </div>
+  <div class="actions"><div class="btn main">Fortify</div><div class="btn">Move</div><div class="btn">Disband</div></div>
+</div>
+
+<div class="dial glass">
+  <h3>Turn 24</h3>
+  <div class="sub">Spring · year 6</div>
+  <div class="ring"><div><img src="icons/hourglass.svg"></div></div>
+  <div class="end">End turn</div>
+</div>
+</body>
+</html>

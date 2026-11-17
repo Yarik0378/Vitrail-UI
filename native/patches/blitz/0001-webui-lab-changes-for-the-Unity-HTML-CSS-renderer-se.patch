@@ -1,0 +1,622 @@
+From 9b009b23076e3ad5a16dbac2ebb4f82f86ae9e7d Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Sun, 8 Nov 2026 17:06:24 +0200
+Subject: [PATCH 01/13] webui-lab: changes for the Unity HTML/CSS renderer
+---
+ Cargo.lock                                    | 44 ++++++++++---
+ Cargo.toml                                    | 13 +++-
+ examples/webui_mutate.rs                      | 46 +++++++++++++
+ examples/webui_render.rs                      | 63 ++++++++++++++++++
+ packages/blitz-dom/src/node/serialize.rs      | 33 ++++++++++
+ packages/blitz-paint/src/gradient.rs          | 20 +++++-
+ packages/blitz-paint/src/render.rs            | 65 ++++++++++++++++++-
+ packages/blitz-paint/src/render/box_shadow.rs | 40 +++++++-----
+ packages/blitz-paint/src/text.rs              | 11 +++-
+ 9 files changed, 304 insertions(+), 31 deletions(-)
+ create mode 100644 examples/webui_mutate.rs
+ create mode 100644 examples/webui_render.rs
+
+diff --git a/Cargo.lock b/Cargo.lock
+index ffec5d4..abbe51a 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -295,7 +295,6 @@ checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
+ [[package]]
+ name = "anyrender"
+ version = "0.14.0"
+-source = "git+https://github.com/DioxusLabs/anyrender?branch=main#812644a68722626e6755ca8319ffebf53c9cdc4e"
+ dependencies = [
+  "kurbo",
+  "peniko",
+@@ -307,7 +306,6 @@ dependencies = [
+ [[package]]
+ name = "anyrender_serialize"
+ version = "0.8.0"
+-source = "git+https://github.com/DioxusLabs/anyrender?branch=main#812644a68722626e6755ca8319ffebf53c9cdc4e"
+ dependencies = [
+  "anyrender",
+  "image",
+@@ -325,7 +323,6 @@ dependencies = [
+ [[package]]
+ name = "anyrender_skia"
+ version = "0.12.0"
+-source = "git+https://github.com/DioxusLabs/anyrender?branch=main#812644a68722626e6755ca8319ffebf53c9cdc4e"
+ dependencies = [
+  "anyrender",
+  "ash",
+@@ -356,19 +353,18 @@ dependencies = [
+ [[package]]
+ name = "anyrender_svg"
+ version = "0.15.0"
+-source = "git+https://github.com/DioxusLabs/anyrender?branch=main#812644a68722626e6755ca8319ffebf53c9cdc4e"
+ dependencies = [
+  "anyrender",
+  "image",
+  "kurbo",
+  "peniko",
++ "resvg",
+  "usvg",
+ ]
+ 
+ [[package]]
+ name = "anyrender_vello"
+ version = "0.15.0"
+-source = "git+https://github.com/DioxusLabs/anyrender?branch=main#812644a68722626e6755ca8319ffebf53c9cdc4e"
+ dependencies = [
+  "anyrender",
+  "debug_timer 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+@@ -386,7 +382,6 @@ dependencies = [
+ [[package]]
+ name = "anyrender_vello_cpu"
+ version = "0.18.0"
+-source = "git+https://github.com/DioxusLabs/anyrender?branch=main#812644a68722626e6755ca8319ffebf53c9cdc4e"
+ dependencies = [
+  "anyrender",
+  "bytemuck",
+@@ -404,7 +399,6 @@ dependencies = [
+ [[package]]
+ name = "anyrender_vello_hybrid"
+ version = "0.11.0"
+-source = "git+https://github.com/DioxusLabs/anyrender?branch=main#812644a68722626e6755ca8319ffebf53c9cdc4e"
+ dependencies = [
+  "anyrender",
+  "debug_timer 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+@@ -6357,7 +6351,6 @@ dependencies = [
+ [[package]]
+ name = "pixels_window_renderer"
+ version = "0.9.0"
+-source = "git+https://github.com/DioxusLabs/anyrender?branch=main#812644a68722626e6755ca8319ffebf53c9cdc4e"
+ dependencies = [
+  "anyrender",
+  "debug_timer 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+@@ -7063,6 +7056,21 @@ dependencies = [
+  "tower-service",
+ ]
+ 
++[[package]]
++name = "resvg"
++version = "0.48.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "67e3803f97b999e80cbf7c6ecdd07a8102204d92e1633cf48783720c521196bd"
++dependencies = [
++ "bytemuck",
++ "log",
++ "pico-args",
++ "rgb",
++ "svgtypes",
++ "tiny-skia",
++ "usvg",
++]
++
+ [[package]]
+ name = "rfd"
+ version = "0.17.2"
+@@ -7092,6 +7100,9 @@ name = "rgb"
+ version = "0.8.53"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "47b34b781b31e5d73e9fbc8689c70551fd1ade9a19e3e28cfec8580a79290cc4"
++dependencies = [
++ "bytemuck",
++]
+ 
+ [[package]]
+ name = "ring"
+@@ -7846,7 +7857,6 @@ dependencies = [
+ [[package]]
+ name = "softbuffer_window_renderer"
+ version = "0.9.0"
+-source = "git+https://github.com/DioxusLabs/anyrender?branch=main#812644a68722626e6755ca8319ffebf53c9cdc4e"
+ dependencies = [
+  "anyrender",
+  "debug_timer 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+@@ -8486,6 +8496,7 @@ dependencies = [
+  "bytemuck",
+  "cfg-if",
+  "log",
++ "png 0.18.1",
+  "tiny-skia-path",
+ ]
+ 
+@@ -9554,6 +9565,20 @@ dependencies = [
+  "rustls-pki-types",
+ ]
+ 
++[[package]]
++name = "webui"
++version = "0.1.0"
++dependencies = [
++ "anyrender",
++ "anyrender_vello_cpu",
++ "blitz-dom",
++ "blitz-html",
++ "blitz-paint",
++ "blitz-traits",
++ "image",
++ "peniko",
++]
++
+ [[package]]
+ name = "weezl"
+ version = "0.1.12"
+@@ -9943,7 +9968,6 @@ dependencies = [
+ [[package]]
+ name = "wgpu_context"
+ version = "0.10.0"
+-source = "git+https://github.com/DioxusLabs/anyrender?branch=main#812644a68722626e6755ca8319ffebf53c9cdc4e"
+ dependencies = [
+  "futures-intrusive",
+  "objc2-core-graphics",
+diff --git a/Cargo.toml b/Cargo.toml
+index 024c976..fbf06c2 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -27,6 +27,7 @@ members = [
+     "examples/todomvc",
+     "examples/wgpu_texture",
+     "examples/wasm_hello",
++    "../webui-ffi",
+ ]
+ exclude = ["sites"]
+ resolver = "2"
+@@ -270,7 +271,7 @@ anyrender_vello_hybrid = { workspace = true }
+ blitz-dom = { workspace = true, features = ["default"] }
+ blitz-html = { workspace = true }
+ blitz-traits = { workspace = true }
+-blitz-paint = { workspace = true }
++blitz-paint = { workspace = true, features = ["svg", "apple-font-embolden"] }
+ blitz-shell = { workspace = true }
+ blitz-net = { workspace = true }
+ blitz-vibey-script = { workspace = true }
+@@ -303,6 +304,16 @@ wgpu_context = { workspace = true }
+ rustc-hash = { workspace = true }
+ 
+ # glifo 0.4.0 with the unhinted embolden fix (linebender/vello#2049). Drop once it ships.
++[patch."https://github.com/DioxusLabs/anyrender"]
++anyrender = { path = "../anyrender/crates/anyrender" }
++anyrender_svg = { path = "../anyrender/crates/anyrender_svg" }
++anyrender_vello = { path = "../anyrender/crates/anyrender_vello" }
++anyrender_vello_cpu = { path = "../anyrender/crates/anyrender_vello_cpu" }
++anyrender_vello_hybrid = { path = "../anyrender/crates/anyrender_vello_hybrid" }
++anyrender_serialize = { path = "../anyrender/crates/anyrender_serialize" }
++anyrender_skia = { path = "../anyrender/crates/anyrender_skia" }
++wgpu_context = { path = "../anyrender/crates/wgpu_context" }
++
+ [patch.crates-io]
+ glifo = { git = "https://github.com/DioxusLabs/vello", branch = "devin/glifo-0.4.0-embolden-2049" }
+ vello_common = { git = "https://github.com/DioxusLabs/vello", branch = "devin/glifo-0.4.0-embolden-2049" }
+diff --git a/examples/webui_mutate.rs b/examples/webui_mutate.rs
+new file mode 100644
+index 0000000..b273037
+--- /dev/null
++++ b/examples/webui_mutate.rs
+@@ -0,0 +1,46 @@
++//! webui-lab: check that changing an inline SVG's attributes after load repaints it.
++use anyrender::render_to_buffer;
++use anyrender_vello_cpu::VelloCpuImageRenderer;
++use blitz_dom::{DocumentConfig, LocalName, QualName, ns};
++use blitz_html::HtmlDocument;
++use blitz_net::Provider;
++use blitz_paint::paint_scene;
++use blitz_traits::shell::{ColorScheme, Viewport};
++use reqwest::Url;
++use std::{fs::File, sync::Arc};
++
++#[tokio::main]
++async fn main() {
++    let a: Vec<String> = std::env::args().collect();
++    let input = std::fs::canonicalize(&a[1]).unwrap();
++    let (w, h) = (a[3].parse::<u32>().unwrap(), a[4].parse::<u32>().unwrap());
++    let html = std::fs::read_to_string(&input).unwrap();
++    let net = Arc::new(Provider::new(None));
++    let mut doc = HtmlDocument::from_html(&html, DocumentConfig {
++        base_url: Some(Url::from_file_path(&input).unwrap().to_string()),
++        net_provider: Some(Arc::clone(&net) as _),
++        viewport: Some(Viewport::new(w, h, 1.0, ColorScheme::Light)),
++        ..Default::default()
++    });
++    loop { doc.resolve(0.0); if net.is_empty() { break; } }
++    doc.as_mut().resolve(0.0);
++    let dx = w as f32 - 1422.0;
++    let shift = |d: &str| -> String {
++        let mut out = String::new(); let mut num = String::new();
++        let flush = |num: &mut String, out: &mut String| { if num.is_empty() { return; } let v: f32 = num.parse().unwrap(); out.push_str(&format!("{}", if v >= 1100.0 { v + dx } else { v })); num.clear(); };
++        for c in d.chars() { if c.is_ascii_digit() || c == '.' { num.push(c) } else { flush(&mut num, &mut out); out.push(c) } }
++        flush(&mut num, &mut out); out
++    };
++    let q = |n: &str| QualName::new(None, ns!(), LocalName::from(n));
++    for (id, d) in [("p-body", "M0 0H1422V68H1236Q1220 68 1214 60Q1206 50 1188 50H262Q246 50 240 62Q232 76 214 76H0Z"), ("p-edge", "M0 76H214Q232 76 240 62Q246 50 262 50H1188Q1206 50 1214 60Q1220 68 1236 68H1422")] {
++        let nid = doc.get_element_by_id(id).unwrap();
++        doc.mutate().set_attribute(nid, q("d"), &shift(d));
++    }
++    let f = doc.get_element_by_id("frame").unwrap();
++    doc.mutate().set_attribute(f, q("viewBox"), &format!("0 0 {w} 80"));
++    doc.as_mut().resolve(0.0);
++    let buf = render_to_buffer::<VelloCpuImageRenderer, _>(|s| paint_scene(s, doc.as_mut(), 1.0, w, h, 0, 0), w, h);
++    let mut enc = png::Encoder::new(File::create(&a[2]).unwrap(), w, h);
++    enc.set_color(png::ColorType::Rgba); enc.set_depth(png::BitDepth::Eight);
++    enc.write_header().unwrap().write_image_data(&buf).unwrap();
++}
+diff --git a/examples/webui_render.rs b/examples/webui_render.rs
+new file mode 100644
+index 0000000..18e799c
+--- /dev/null
++++ b/examples/webui_render.rs
+@@ -0,0 +1,63 @@
++//! webui-lab: render a local HTML file to a transparent PNG with Blitz's CPU painter, for pixel comparison with Chrome.
++//! Usage: webui_render <in.html> <out.png> <css width> <css height> [scale] [unpremultiply 0/1]
++use anyrender::render_to_buffer;
++use anyrender_vello_cpu::VelloCpuImageRenderer;
++use blitz_dom::DocumentConfig;
++use blitz_html::HtmlDocument;
++use blitz_net::Provider;
++use blitz_paint::paint_scene;
++use blitz_traits::shell::{ColorScheme, Viewport};
++use reqwest::Url;
++use std::{fs::File, sync::Arc, time::Instant};
++
++#[tokio::main]
++async fn main() {
++    let a: Vec<String> = std::env::args().collect();
++    let input = std::fs::canonicalize(&a[1]).unwrap();
++    let out = &a[2];
++    let width: u32 = a[3].parse().unwrap();
++    let height: u32 = a[4].parse().unwrap();
++    let scale: f64 = a.get(5).and_then(|s| s.parse().ok()).unwrap_or(1.0);
++    let unpremul = a.get(6).map(|s| s == "1").unwrap_or(true);
++    let url = Url::from_file_path(&input).unwrap().to_string();
++    let html = std::fs::read_to_string(&input).unwrap();
++    let t0 = Instant::now();
++    let net = Arc::new(Provider::new(None));
++    let (pw, ph) = ((width as f64 * scale) as u32, (height as f64 * scale) as u32);
++    let mut doc = HtmlDocument::from_html(&html, DocumentConfig {
++        base_url: Some(url),
++        net_provider: Some(Arc::clone(&net) as _),
++        viewport: Some(Viewport::new(pw, ph, scale as f32, ColorScheme::Light)),
++        ..Default::default()
++    });
++    loop { doc.resolve(0.0); if net.is_empty() { break; } }
++    doc.as_mut().resolve(0.0);
++    let t1 = Instant::now();
++    let mut buf = render_to_buffer::<VelloCpuImageRenderer, _>(|scene| {
++        paint_scene(scene, doc.as_mut(), scale, pw, ph, 0, 0);
++    }, pw, ph);
++    let t2 = Instant::now();
++    // Steady-state repaints (caches warm), as a HUD repaints on hover.
++    let reps: u32 = std::env::var("REPS").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
++    if reps > 0 {
++        let t = Instant::now();
++        for _ in 0..reps {
++            doc.as_mut().resolve(0.0);
++            let _ = render_to_buffer::<VelloCpuImageRenderer, _>(|scene| { paint_scene(scene, doc.as_mut(), scale, pw, ph, 0, 0); }, pw, ph);
++        }
++        println!("repaint avg {:?}", t.elapsed() / reps);
++    }
++    if unpremul {
++        for px in buf.chunks_exact_mut(4) {
++            let a = px[3] as u32;
++            if a > 0 && a < 255 { for c in 0..3 { px[c] = ((px[c] as u32 * 255 + a / 2) / a).min(255) as u8; } }
++        }
++    }
++    let mut enc = png::Encoder::new(File::create(out).unwrap(), pw, ph);
++    enc.set_color(png::ColorType::Rgba);
++    enc.set_depth(png::BitDepth::Eight);
++    let mut w = enc.write_header().unwrap();
++    w.write_image_data(&buf).unwrap();
++    w.finish().unwrap();
++    println!("style+layout {:?}, paint {:?}, {}x{}", t1 - t0, t2 - t1, pw, ph);
++}
+diff --git a/packages/blitz-dom/src/node/serialize.rs b/packages/blitz-dom/src/node/serialize.rs
+index d8919a7..30ec3e3 100644
+--- a/packages/blitz-dom/src/node/serialize.rs
++++ b/packages/blitz-dom/src/node/serialize.rs
+@@ -180,6 +180,39 @@ impl Node {
+                     writer.push('"');
+                 }
+ 
++                // webui-lab: CSS rules that style an inline <svg> (`.btn svg { stroke: …; fill: none }`) are lost once
++                // the subtree goes to usvg as text, so the root carries its computed SVG paint as presentation
++                // attributes; children inherit them unless they set their own.
++                if opts.resolve_current_color && nesting == 0 && AsRef::<str>::as_ref(&data.name.local) == "svg" {
++                    if let Some(styles) = self.primary_styles() {
++                        let svg = styles.get_inherited_svg();
++                        let pairs = [
++                            ("fill", svg.fill.to_css_string()),
++                            ("stroke", svg.stroke.to_css_string()),
++                            ("stroke-width", svg.stroke_width.to_css_string()),
++                            ("stroke-linecap", svg.stroke_linecap.to_css_string()),
++                            ("stroke-linejoin", svg.stroke_linejoin.to_css_string()),
++                            ("fill-opacity", svg.fill_opacity.to_css_string()),
++                            ("stroke-opacity", svg.stroke_opacity.to_css_string()),
++                        ];
++                        let defaults = ["rgb(0, 0, 0)", "none", "1px", "butt", "miter", "1", "1"];
++                        for ((name, value), default) in pairs.iter().zip(defaults) {
++                            if value == default || data.attrs().iter().any(|a| AsRef::<str>::as_ref(&a.name.local) == *name) {
++                                continue;
++                            }
++                            let value = match current_color.as_ref() {
++                                Some(c) => value.replace("currentcolor", c).replace("currentColor", c),
++                                None => value.clone(),
++                            };
++                            writer.push(' ');
++                            writer.push_str(name);
++                            writer.push_str("=\"");
++                            encode_quoted_attribute_to_string(&value, writer);
++                            writer.push('"');
++                        }
++                    }
++                }
++
+                 for attr in data.attrs() {
+                     writer.push(' ');
+                     write_attr_name(&attr.name, writer);
+diff --git a/packages/blitz-paint/src/gradient.rs b/packages/blitz-paint/src/gradient.rs
+index 9ad3b36..8333d67 100644
+--- a/packages/blitz-paint/src/gradient.rs
++++ b/packages/blitz-paint/src/gradient.rs
+@@ -74,14 +74,14 @@ pub(crate) fn to_peniko_gradient(
+             flags,
+             // compat_mode,
+             ..
+-        } => radial_gradient((shape, position, items, *flags), origin_rect, current_color),
++        } => in_css_px(origin_rect, scale, |r| radial_gradient((shape, position, items, *flags), r, current_color)),
+         GenericGradient::Conic {
+             angle,
+             position,
+             items,
+             flags,
+             ..
+-        } => conic_gradient((angle, position, items, *flags), origin_rect, current_color),
++        } => in_css_px(origin_rect, scale, |r| conic_gradient((angle, position, items, *flags), r, current_color)),
+     }
+ }
+ 
+@@ -158,6 +158,22 @@ fn linear_gradient(
+     (gradient, None)
+ }
+ 
++/// webui-lab: radial and conic gradients resolve their lengths (`circle 22px`, `at 30px 10px`, `transparent 25px`) in
++/// CSS px, but the tile they fill is in device px; so they are built for the tile in CSS px and scaled up after, or
++/// every px length came out `scale` times too small on a HiDPI screen (percentages were right).
++fn in_css_px(
++    rect: Rect,
++    scale: f64,
++    build: impl FnOnce(Rect) -> (peniko::Gradient, Option<Affine>),
++) -> (peniko::Gradient, Option<Affine>) {
++    if (scale - 1.0).abs() < 1e-9 || scale <= 0.0 {
++        return build(rect);
++    }
++    let css = Rect::new(rect.x0 / scale, rect.y0 / scale, rect.x1 / scale, rect.y1 / scale);
++    let (gradient, transform) = build(css);
++    (gradient, transform.map(|t| Affine::scale(scale) * t))
++}
++
+ fn radial_gradient(
+     gradient: RadialGradient,
+     rect: Rect,
+diff --git a/packages/blitz-paint/src/render.rs b/packages/blitz-paint/src/render.rs
+index a32aa30..e7cd68c 100644
+--- a/packages/blitz-paint/src/render.rs
++++ b/packages/blitz-paint/src/render.rs
+@@ -800,6 +800,55 @@ fn svg_viewport_affine(svg: &blitz_dom::node::SvgImageData, width: f32, height:
+ }
+ 
+ /// Ensure that the `resized_image` field has a correctly sized image
++/// An area-averaged copy of `image` at `tw`×`th` (premultiplied), cached by source and size.
++fn downscaled(image: &RasterImageData, tw: u32, th: u32, quality: peniko::ImageQuality) -> peniko::ImageBrush {
++    use std::collections::HashMap;
++    use std::sync::{Mutex, OnceLock};
++    static CACHE: OnceLock<Mutex<HashMap<(u64, u32, u32), peniko::Blob<u8>>>> = OnceLock::new();
++    let key = (image.data.id(), tw, th);
++    let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
++    let blob = {
++        let mut map = cache.lock().unwrap();
++        if map.len() > 512 { map.clear(); }
++        map.entry(key).or_insert_with(|| {
++            let (sw, sh) = (image.width as usize, image.height as usize);
++            let src = image.data.data();
++            let (fx, fy) = (sw as f64 / tw as f64, sh as f64 / th as f64);
++            let mut out = vec![0u8; (tw * th * 4) as usize];
++            for oy in 0..th as usize {
++                let (y0, y1) = (oy as f64 * fy, (oy + 1) as f64 * fy);
++                for ox in 0..tw as usize {
++                    let (x0, x1) = (ox as f64 * fx, (ox + 1) as f64 * fx);
++                    let mut acc = [0.0f64; 4];
++                    let mut wsum = 0.0;
++                    for sy in y0.floor() as usize..(y1.ceil() as usize).min(sh) {
++                        let wy = (y1.min(sy as f64 + 1.0) - y0.max(sy as f64)).max(0.0);
++                        for sx in x0.floor() as usize..(x1.ceil() as usize).min(sw) {
++                            let wx = (x1.min(sx as f64 + 1.0) - x0.max(sx as f64)).max(0.0);
++                            let w = wx * wy;
++                            let i = (sy * sw + sx) * 4;
++                            let a = src[i + 3] as f64 / 255.0;
++                            for k in 0..3 { acc[k] += src[i + k] as f64 * a * w; }
++                            acc[3] += a * w;
++                            wsum += w;
++                        }
++                    }
++                    let o = (oy * tw as usize + ox) * 4;
++                    if wsum > 0.0 {
++                        for k in 0..3 { out[o + k] = (acc[k] / wsum).round().clamp(0.0, 255.0) as u8; }
++                        out[o + 3] = (acc[3] / wsum * 255.0).round().clamp(0.0, 255.0) as u8;
++                    }
++                }
++            }
++            peniko::Blob::new(std::sync::Arc::new(out))
++        }).clone()
++    };
++    peniko::ImageBrush {
++        image: ImageData { data: blob, format: peniko::ImageFormat::Rgba8, width: tw, height: th, alpha_type: peniko::ImageAlphaType::AlphaPremultiplied },
++        sampler: ImageSampler { x_extend: peniko::Extend::Pad, y_extend: peniko::Extend::Pad, quality, alpha: 1.0 },
++    }
++}
++
+ fn to_peniko_image(image: &RasterImageData, quality: peniko::ImageQuality) -> peniko::ImageBrush {
+     peniko::ImageBrush {
+         image: ImageData {
+@@ -1279,7 +1328,11 @@ impl ElementCx<'_, '_> {
+             x_offset.px(),
+             y_offset.px(),
+             |scene| {
++                // webui-lab: an inline <svg> clips its content to its viewport (overflow: hidden), so a filter's
++                // shadow doesn't spill past the element, as in browsers.
++                scene.push_clip_layer(peniko::Fill::NonZero, self.transform, &self.frame.content_box);
+                 anyrender_svg::render_svg_tree(scene, &svg.tree, transform);
++                scene.pop_layer();
+             },
+         );
+     }
+@@ -1359,7 +1412,17 @@ impl ElementCx<'_, '_> {
+                 x_offset.px(),
+                 y_offset.px(),
+                 |scene| {
+-                    scene.draw_image(to_peniko_image(image, quality).as_ref(), transform);
++                    // webui-lab: an image drawn much smaller than it is gets an area-averaged copy at its drawn size
++                    // (as Chrome's mipmapped filtering does); plain bilinear sampling of a 128px icon at 24px sparkles.
++                    let (tw, th) = (paint_size.width.round() as u32, paint_size.height.round() as u32);
++                    if tw > 0 && th > 0 && (tw as f32) < image.width as f32 * 0.75 && (th as f32) < image.height as f32 * 0.75 {
++                        let small = downscaled(image, tw, th, quality);
++                        let t = self.transform.pre_translate(Vec2 { x, y })
++                            .pre_scale_non_uniform(paint_size.width as f64 / tw as f64, paint_size.height as f64 / th as f64);
++                        scene.draw_image(small.as_ref(), t);
++                    } else {
++                        scene.draw_image(to_peniko_image(image, quality).as_ref(), transform);
++                    }
+                 },
+             );
+         }
+diff --git a/packages/blitz-paint/src/render/box_shadow.rs b/packages/blitz-paint/src/render/box_shadow.rs
+index d0d0fac..cc47d8b 100644
+--- a/packages/blitz-paint/src/render/box_shadow.rs
++++ b/packages/blitz-paint/src/render/box_shadow.rs
+@@ -61,7 +61,8 @@ impl ElementCx<'_, '_> {
+                         });
+ 
+                         let spread = shadow.spread.px() as f64 * self.scale;
+-                        let blur = shadow.base.blur.px() as f64;
++                        // webui-lab: a CSS blur radius is twice the Gaussian σ (and is in CSS px, so scaled).
++                        let blur = shadow.base.blur.px() as f64 * self.scale / 2.0;
+ 
+                         // Without blur or spread the shadow is exactly the element's shape,
+                         // so fill the border box path directly (preserving individual radii)
+@@ -77,11 +78,18 @@ impl ElementCx<'_, '_> {
+                         }
+ 
+                         // TODO draw shadows with matching individual radii instead of averaging
+-                        let radius = self.frame.border_radii.average();
++                        let base_radius = self.frame.border_radii.average();
++                        // CSS: a spread grows the corner radius with the box (sharp corners stay sharp).
++                        let radius = if base_radius > 0.0 { (base_radius + spread).max(0.0) } else { 0.0 };
+                         let rect = self.frame.border_box.inflate(spread, spread);
+ 
+-                        // Fill the color
+-                        scene.draw_box_shadow(transform, rect, shadow_color, radius, blur);
++                        // Fill the color (a spread without blur is a sharp ring: the blurred-rect primitive
++                        // degenerates at σ = 0)
++                        if blur < 0.01 {
++                            scene.fill(Fill::NonZero, transform, shadow_color, None, &kurbo::RoundedRect::from_rect(rect, radius));
++                        } else {
++                            scene.draw_box_shadow(transform, rect, shadow_color, radius, blur);
++                        }
+                     }
+                 }
+             },
+@@ -98,18 +106,21 @@ impl ElementCx<'_, '_> {
+ 
+         let padding_box = self.frame.padding_box_path();
+ 
+-        for shadow in box_shadow.iter().filter(|s| s.inset) {
++        // webui-lab: CSS paints the first listed shadow on top, so draw them last to first.
++        for shadow in box_shadow.iter().filter(|s| s.inset).rev() {
+             let shadow_color = shadow
+                 .base
+                 .color
+                 .resolve_to_absolute(&current_color)
+                 .as_srgb_color();
+             if shadow_color == Color::TRANSPARENT {
+-                return;
++                continue;
+             }
+ 
+             // TODO draw shadows with matching individual radii instead of averaging
+-            let radius = self.frame.border_radii.average();
++            let spread = shadow.spread.px() as f64 * self.scale;
++            // The hole's corners shrink with the spread, as in CSS.
++            let radius = (self.frame.border_radii.average() - spread).max(0.0);
+             let transform = self.transform.then_translate(Vec2 {
+                 x: shadow.base.horizontal.px() as f64,
+                 y: shadow.base.vertical.px() as f64,
+@@ -142,15 +153,14 @@ impl ElementCx<'_, '_> {
+                 None,
+             );
+             // The unshadowed area is the padding box shrunk by the spread radius
+-            let spread = shadow.spread.px() as f64 * self.scale;
+             let hole = self.frame.padding_box.inflate(-spread, -spread);
+-            scene.draw_box_shadow(
+-                transform,
+-                hole,
+-                Color::WHITE,
+-                radius,
+-                shadow.base.blur.px() as f64 * self.scale,
+-            );
++            let sigma = shadow.base.blur.px() as f64 * self.scale / 2.0;
++            if sigma < 0.01 {
++                // No blur: a sharp hole (the blurred-rect primitive degenerates at σ = 0).
++                scene.fill(Fill::NonZero, transform, Color::WHITE, None, &kurbo::RoundedRect::from_rect(hole, radius));
++            } else {
++                scene.draw_box_shadow(transform, hole, Color::WHITE, radius, sigma);
++            }
+ 
+             scene.pop_layer();
+             scene.pop_layer();
+diff --git a/packages/blitz-paint/src/text.rs b/packages/blitz-paint/src/text.rs
+index 9ed11d6..469e806 100644
+--- a/packages/blitz-paint/src/text.rs
++++ b/packages/blitz-paint/src/text.rs
+@@ -662,6 +662,12 @@ pub(crate) fn stroke_text<'a>(
+                 };
+ 
+                 let normalized_coords: &[i16] = bytemuck::cast_slice(run.normalized_coords());
++                // webui-lab: browsers put each line's baseline on a whole device pixel; without this the text sits
++                // up to half a pixel off and looks softer than in Chrome.
++                // Like Chrome, the box's paint offset and the baseline within it are rounded separately.
++                let origin_y = transform.translation().y;
++                let baseline = glyph_run.baseline() as f64;
++                let snap = (origin_y.round() + baseline.round() - (origin_y + baseline)) as f32;
+                 // Zero-size text is invisible, but hinting can give its glyphs ink.
+                 if font_size > 0.0 {
+                     scene.draw_glyphs(
+@@ -677,8 +683,9 @@ pub(crate) fn stroke_text<'a>(
+                         glyph_xform,
+                         glyph_run.positioned_glyphs().map(|glyph| anyrender::Glyph {
+                             id: glyph.id as _,
+-                            x: glyph.x,
+-                            y: glyph.y,
++                            // webui-lab: glyphs on quarter-pixel positions, as Skia places them in Chrome.
++                            x: { let ox = transform.translation().x as f32; ((ox + glyph.x) * 4.0).round() / 4.0 - ox },
++                            y: glyph.y + snap,
+                         }),
+                     );
+                 }
+-- 
+2.50.1 (Apple Git-155)
+

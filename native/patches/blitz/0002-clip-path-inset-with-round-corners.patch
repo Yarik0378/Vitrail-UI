@@ -1,0 +1,243 @@
+From 87cb5ae8651e58623a182a4654c5b288cdb0f596 Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Sun, 8 Nov 2026 19:32:18 +0200
+Subject: [PATCH 02/13] clip-path: inset() with round corners
+
+Elliptical corners resolved against the inset box and shrunk together when
+they overlap, through CssBox as border-radius does. Cargo.lock: the bridge's
+lyon dependencies.
+---
+ Cargo.lock                                   | 71 +++++++++++++++-----
+ packages/blitz-paint/src/render/clip_path.rs | 19 +++++-
+ 2 files changed, 73 insertions(+), 17 deletions(-)
+
+diff --git a/Cargo.lock b/Cargo.lock
+index abbe51a..e9d85d1 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -272,7 +272,7 @@ version = "1.1.5"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "40c48f72fd53cd289104fc64099abca73db4166ad86ea0b4341abe65af83dadc"
+ dependencies = [
+- "windows-sys 0.60.2",
++ "windows-sys 0.61.2",
+ ]
+ 
+ [[package]]
+@@ -283,7 +283,7 @@ checksum = "291e6a250ff86cd4a820112fb8898808a366d8f9f58ce16d1f538353ad55747d"
+ dependencies = [
+  "anstyle",
+  "once_cell_polyfill",
+- "windows-sys 0.60.2",
++ "windows-sys 0.61.2",
+ ]
+ 
+ [[package]]
+@@ -1782,7 +1782,7 @@ checksum = "af491d569909a7e4dee0ad7db7f5341fef5c614d5b8ec8cf765732aba3cff681"
+ dependencies = [
+  "serde",
+  "termcolor",
+- "unicode-width 0.1.14",
++ "unicode-width 0.2.2",
+ ]
+ 
+ [[package]]
+@@ -2835,7 +2835,7 @@ dependencies = [
+  "libc",
+  "option-ext",
+  "redox_users",
+- "windows-sys 0.60.2",
++ "windows-sys 0.61.2",
+ ]
+ 
+ [[package]]
+@@ -3129,7 +3129,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
+ dependencies = [
+  "libc",
+- "windows-sys 0.52.0",
++ "windows-sys 0.61.2",
+ ]
+ 
+ [[package]]
+@@ -3282,6 +3282,12 @@ dependencies = [
+  "rustc_version",
+ ]
+ 
++[[package]]
++name = "float_next_after"
++version = "1.0.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "8bf7cc16383c4b8d58b9905a8509f02926ce3058053c056376248d958c9df1e8"
++
+ [[package]]
+ name = "floem-editor-core"
+ version = "0.2.0"
+@@ -5011,6 +5017,38 @@ version = "0.1.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "4050469837a6ff301cd14c1f8f24f88549e6d548f24f64e2148eb0f72cebc51f"
+ 
++[[package]]
++name = "lyon_geom"
++version = "1.0.20"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "d82dd26aa4dc0b5b70b9115de59824842bcb43cf4a28e1b1e6d0ad148c93f93e"
++dependencies = [
++ "arrayvec",
++ "euclid",
++ "num-traits",
++]
++
++[[package]]
++name = "lyon_path"
++version = "1.0.19"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "5c463f9c428b7fc5ec885dcd39ce4aa61e29111d0e33483f6f98c74e89d8621e"
++dependencies = [
++ "lyon_geom",
++ "num-traits",
++]
++
++[[package]]
++name = "lyon_tessellation"
++version = "1.0.23"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "fd4872650e70dc907dd4f7ebc449d7d657a0d2658e423b2e724970870bbbf75b"
++dependencies = [
++ "float_next_after",
++ "lyon_path",
++ "num-traits",
++]
++
+ [[package]]
+ name = "macro-string"
+ version = "0.1.4"
+@@ -5477,7 +5515,7 @@ version = "0.50.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
+ dependencies = [
+- "windows-sys 0.60.2",
++ "windows-sys 0.61.2",
+ ]
+ 
+ [[package]]
+@@ -6663,7 +6701,7 @@ dependencies = [
+  "once_cell",
+  "socket2",
+  "tracing",
+- "windows-sys 0.52.0",
++ "windows-sys 0.61.2",
+ ]
+ 
+ [[package]]
+@@ -7201,7 +7239,7 @@ dependencies = [
+  "errno",
+  "libc",
+  "linux-raw-sys 0.12.1",
+- "windows-sys 0.52.0",
++ "windows-sys 0.61.2",
+ ]
+ 
+ [[package]]
+@@ -7258,7 +7296,7 @@ dependencies = [
+  "security-framework",
+  "security-framework-sys",
+  "webpki-root-certs",
+- "windows-sys 0.52.0",
++ "windows-sys 0.61.2",
+ ]
+ 
+ [[package]]
+@@ -7819,7 +7857,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "c3d1e2c7f27f8d4cb10542a02c49005dbd6e93095799d6f3be745fae9f8fedd4"
+ dependencies = [
+  "libc",
+- "windows-sys 0.60.2",
++ "windows-sys 0.61.2",
+ ]
+ 
+ [[package]]
+@@ -8306,10 +8344,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
+ dependencies = [
+  "fastrand",
+- "getrandom 0.3.4",
++ "getrandom 0.4.3",
+  "once_cell",
+  "rustix 1.1.5",
+- "windows-sys 0.52.0",
++ "windows-sys 0.61.2",
+ ]
+ 
+ [[package]]
+@@ -8344,7 +8382,7 @@ version = "1.2.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "d8c27177b12a6399ffc08b98f76f7c9a1f4fe9fc967c784c5a071fa8d93cf7e1"
+ dependencies = [
+- "windows-sys 0.60.2",
++ "windows-sys 0.61.2",
+ ]
+ 
+ [[package]]
+@@ -8908,7 +8946,7 @@ checksum = "f2f6fb2847f6742cd76af783a2a2c49e9375d0a111c7bef6f71cd9e738c72d6e"
+ dependencies = [
+  "memoffset",
+  "tempfile",
+- "windows-sys 0.60.2",
++ "windows-sys 0.61.2",
+ ]
+ 
+ [[package]]
+@@ -9576,7 +9614,10 @@ dependencies = [
+  "blitz-paint",
+  "blitz-traits",
+  "image",
++ "lyon_tessellation",
+  "peniko",
++ "png 0.18.1",
++ "skrifa",
+ ]
+ 
+ [[package]]
+@@ -10040,7 +10081,7 @@ version = "0.1.11"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
+ dependencies = [
+- "windows-sys 0.52.0",
++ "windows-sys 0.61.2",
+ ]
+ 
+ [[package]]
+diff --git a/packages/blitz-paint/src/render/clip_path.rs b/packages/blitz-paint/src/render/clip_path.rs
+index dcef5a4..8f6acd5 100644
+--- a/packages/blitz-paint/src/render/clip_path.rs
++++ b/packages/blitz-paint/src/render/clip_path.rs
+@@ -163,8 +163,23 @@ impl ElementCx<'_, '_> {
+                     return None;
+                 }
+ 
+-                // TODO: Support border-radius on inset()
+-                Some(kurbo::Rect::new(x0, y0, x1, y1).into_path(0.1))
++                // webui-lab: `round` corners (elliptical, shrunk together when they overlap, as border-radius).
++                let r = &inset_rect.round;
++                let (bw, bh) = (x1 - x0, y1 - y0);
++                let corner = |c: &style::values::generics::size::Size2D<style::values::generics::NonNegative<LengthPercentage>>| {
++                    Vec2::new(resolve_lp(&c.width.0, bw), resolve_lp(&c.height.0, bh))
++                };
++                let radii = crate::kurbo_css::NonUniformRoundedRectRadii {
++                    top_left: corner(&r.top_left.0),
++                    top_right: corner(&r.top_right.0),
++                    bottom_right: corner(&r.bottom_right.0),
++                    bottom_left: corner(&r.bottom_left.0),
++                };
++                let rect = kurbo::Rect::new(x0, y0, x1, y1);
++                if [radii.top_left, radii.top_right, radii.bottom_right, radii.bottom_left].iter().all(|v| v.x <= 0.0 || v.y <= 0.0) {
++                    return Some(rect.into_path(0.1));
++                }
++                Some(crate::kurbo_css::CssBox::new(rect, kurbo::Insets::ZERO, kurbo::Insets::ZERO, 0.0, radii).border_box_path())
+             }
+             GenericBasicShape::PathOrShape(path_or_shape) => match path_or_shape {
+                 GenericPathOrShapeFunction::Path(path) => svg_path_to_bezpath(
+-- 
+2.50.1 (Apple Git-155)
+

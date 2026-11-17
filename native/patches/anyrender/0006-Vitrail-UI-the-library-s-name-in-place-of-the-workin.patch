@@ -1,0 +1,135 @@
+From 8f2be8bfaeefef1e45cf63b9aea6c2de44d48d4f Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Mon, 9 Nov 2026 12:53:58 +0200
+Subject: [PATCH 6/7] Vitrail UI: the library's name in place of the working
+ name webui
+---
+ crates/anyrender/src/filters.rs    |  2 +-
+ crates/anyrender/src/lib.rs        | 10 +++++-----
+ crates/anyrender/src/recording.rs  | 14 +++++++-------
+ crates/anyrender_svg/Cargo.toml    |  2 +-
+ crates/anyrender_svg/src/render.rs |  2 +-
+ 5 files changed, 15 insertions(+), 15 deletions(-)
+
+diff --git a/crates/anyrender/src/filters.rs b/crates/anyrender/src/filters.rs
+index 1e5d5ec..eaa0953 100644
+--- a/crates/anyrender/src/filters.rs
++++ b/crates/anyrender/src/filters.rs
+@@ -112,7 +112,7 @@ impl Filter {
+     pub fn add(&mut self, effect: FilterEffect, inputs: FilterInputs) -> FilterId {
+         let id = FilterId(self.primitives.len() as u16);
+ 
+-        // webui-lab: a primitive fed by the previous one's result grows what that result already grew (a shadow
++        // vitrail-ui: a primitive fed by the previous one's result grows what that result already grew (a shadow
+         // then a blur reach offset + 3σ), so chained expansions add up; independent ones are united.
+         let primitive_rect = effect.expansion_rect();
+         self.expansion_rect = if matches!(inputs.primary, Some(FilterInput::Result(_))) {
+diff --git a/crates/anyrender/src/lib.rs b/crates/anyrender/src/lib.rs
+index 455914d..9f6118a 100644
+--- a/crates/anyrender/src/lib.rs
++++ b/crates/anyrender/src/lib.rs
+@@ -211,19 +211,19 @@ pub trait PaintScene: RenderContext {
+     /// Pops the current layer.
+     fn pop_layer(&mut self);
+ 
+-    /// webui-lab: marks the start of an element the embedder may composite on its own (id, world transform as painted,
++    /// vitrail-ui: marks the start of an element the embedder may composite on its own (id, world transform as painted,
+     /// its own CSS transform). Painters that don't composite ignore it.
+     fn composited_begin(&mut self, _id: u64, _world: Affine, _local: Affine) {}
+ 
+-    /// webui-lab: marks the end of a composited element.
++    /// vitrail-ui: marks the end of a composited element.
+     fn composited_end(&mut self) {}
+ 
+-    /// webui-lab: marks the start of a scroll container's content painted unscrolled (id, scroll offset and clip box in
++    /// vitrail-ui: marks the start of a scroll container's content painted unscrolled (id, scroll offset and clip box in
+     /// device px). Painters that don't scroll on the GPU ignore it (and get the content unscrolled: only embedders that
+     /// asked for it get it).
+     fn scroll_begin(&mut self, _id: u64, _offset: kurbo::Vec2, _clip: kurbo::Rect) {}
+ 
+-    /// webui-lab: marks the end of a scroll container's content.
++    /// vitrail-ui: marks the end of a scroll container's content.
+     fn scroll_end(&mut self) {}
+ 
+     /// Strokes a shape using the specified style and brush.
+@@ -275,7 +275,7 @@ pub trait PaintScene: RenderContext {
+ 
+     // --- Provided methods
+ 
+-    /// webui-lab: appends a shared recorded piece (`RenderCommand::Group`). A recording keeps the reference; other
++    /// vitrail-ui: appends a shared recorded piece (`RenderCommand::Group`). A recording keeps the reference; other
+     /// painters draw its commands.
+     fn append_group(&mut self, group: &std::sync::Arc<Vec<RenderCommand>>) {
+         self.append_scene(Scene { tolerance: 0.1, commands: (**group).clone() }, Affine::IDENTITY);
+diff --git a/crates/anyrender/src/recording.rs b/crates/anyrender/src/recording.rs
+index c438811..147ede6 100644
+--- a/crates/anyrender/src/recording.rs
++++ b/crates/anyrender/src/recording.rs
+@@ -30,23 +30,23 @@ pub enum RenderCommand<Font = FontData, Brush = Paint> {
+     GlyphRun(GlyphRunCommand<Font, Brush>),
+     /// Draw a rounded rectangle blurred with a gaussian filter.
+     BoxShadow(BoxShadowCommand),
+-    /// webui-lab: what follows, up to `CompositedEnd`, is an element the embedder may composite on its own (its transform
++    /// vitrail-ui: what follows, up to `CompositedEnd`, is an element the embedder may composite on its own (its transform
+     /// or opacity animates): painters that don't composite ignore both.
+     CompositedBegin(CompositedCommand),
+-    /// webui-lab: the end of a composited element.
++    /// vitrail-ui: the end of a composited element.
+     CompositedEnd,
+-    /// webui-lab: what follows, up to `ScrollEnd`, is a scroll container's content painted unscrolled (the embedder
++    /// vitrail-ui: what follows, up to `ScrollEnd`, is a scroll container's content painted unscrolled (the embedder
+     /// moves it by the container's scroll offset on the GPU). Painters that don't do this ignore both.
+     ScrollBegin(ScrollCommand),
+-    /// webui-lab: the end of a scroll container's content.
++    /// vitrail-ui: the end of a scroll container's content.
+     ScrollEnd,
+-    /// webui-lab: a recorded piece shared between recordings (an element painted earlier and unchanged since): the
++    /// vitrail-ui: a recorded piece shared between recordings (an element painted earlier and unchanged since): the
+     /// same commands as if they were here. Painters may keep what they made of it by its address.
+     #[cfg_attr(feature = "serde", serde(skip))]
+     Group(Arc<Vec<RenderCommand<Font, Brush>>>),
+ }
+ 
+-/// webui-lab: a scroll container whose content is painted unscrolled: its node id, its scroll offset when painted (device
++/// vitrail-ui: a scroll container whose content is painted unscrolled: its node id, its scroll offset when painted (device
+ /// px) and its clip box on the page (device px), where scrolling changes the picture.
+ #[derive(Clone, Debug, PartialEq)]
+ #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+@@ -56,7 +56,7 @@ pub struct ScrollCommand {
+     pub clip: Rect,
+ }
+ 
+-/// webui-lab: an element composited on its own: its node id, its world transform as painted (its own CSS transform
++/// vitrail-ui: an element composited on its own: its node id, its world transform as painted (its own CSS transform
+ /// included) and that own transform, so the embedder can move it as the transform animates.
+ #[derive(Clone, Debug, PartialEq)]
+ #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+diff --git a/crates/anyrender_svg/Cargo.toml b/crates/anyrender_svg/Cargo.toml
+index dc32253..d19bb01 100644
+--- a/crates/anyrender_svg/Cargo.toml
++++ b/crates/anyrender_svg/Cargo.toml
+@@ -24,6 +24,6 @@ anyrender = { workspace = true }
+ peniko = { workspace = true }
+ kurbo = { workspace = true }
+ usvg = { workspace = true, default-features = false }
+-# webui-lab: groups with SVG filters are rasterized by resvg, which follows browsers (filters in linearRGB, all primitives).
++# vitrail-ui: groups with SVG filters are rasterized by resvg, which follows browsers (filters in linearRGB, all primitives).
+ resvg = { version = "0.48", default-features = false }
+ image = { workspace = true, default-features = false, optional = true }
+\ No newline at end of file
+diff --git a/crates/anyrender_svg/src/render.rs b/crates/anyrender_svg/src/render.rs
+index fe7dc60..2f7e18f 100644
+--- a/crates/anyrender_svg/src/render.rs
++++ b/crates/anyrender_svg/src/render.rs
+@@ -18,7 +18,7 @@ pub(crate) fn render_group<S: PaintScene, F: FnMut(&mut S, &usvg::Node)>(
+         let transform = transform * util::to_affine(&node.abs_transform());
+         match node {
+             usvg::Node::Group(g) => {
+-                // webui-lab: a group with SVG filters is drawn by resvg into an image (filters in linearRGB and every
++                // vitrail-ui: a group with SVG filters is drawn by resvg into an image (filters in linearRGB and every
+                 // primitive, as browsers do) and placed on the canvas.
+                 if !g.filters().is_empty() {
+                     if let Some((image, at)) = rasterize_filtered(node, g, global_transform) {
+-- 
+2.50.1 (Apple Git-155)
+

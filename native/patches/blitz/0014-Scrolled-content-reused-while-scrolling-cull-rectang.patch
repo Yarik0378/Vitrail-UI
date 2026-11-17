@@ -1,0 +1,153 @@
+From ff4b1feb6dad7198dee64843d0c93c68a4e8ce0d Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Mon, 9 Nov 2026 03:27:06 +0200
+Subject: [PATCH] Scrolled content reused while scrolling: cull rectangle in
+ steps, wholly-inside elements keyed without it, no layer limit
+
+---
+ Cargo.lock                         | 41 ++++++++++++++++++++++++++++++
+ packages/blitz-paint/src/layers.rs |  5 +++-
+ packages/blitz-paint/src/render.rs | 24 ++++++++++++++---
+ 3 files changed, 66 insertions(+), 4 deletions(-)
+
+diff --git a/Cargo.lock b/Cargo.lock
+index e9d85d1..e4c8107 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -7024,6 +7024,15 @@ dependencies = [
+  "memchr",
+ ]
+ 
++[[package]]
++name = "relative-path"
++version = "2.0.3"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "38540a682c6e9bca04a8bca9e5ec5a6ba168dfbb04c9998fe517a9befb92eb68"
++dependencies = [
++ "serde_core",
++]
++
+ [[package]]
+ name = "renderdoc-sys"
+ version = "1.1.0"
+@@ -7171,6 +7180,35 @@ dependencies = [
+  "memchr",
+ ]
+ 
++[[package]]
++name = "rquickjs"
++version = "0.14.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "a0a22bf72f515cc4189dd7c63d016f6de92a11eee98ddf7dd64794198f6eb34e"
++dependencies = [
++ "rquickjs-core",
++]
++
++[[package]]
++name = "rquickjs-core"
++version = "0.14.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "6657979a24d543e5fc66f32cef2f47ca82ce8eb55cec5f7d59a12b7b570bbf24"
++dependencies = [
++ "hashbrown 0.17.1",
++ "relative-path",
++ "rquickjs-sys",
++]
++
++[[package]]
++name = "rquickjs-sys"
++version = "0.14.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "cee271d0eeba64f0915b846cb7ae02e16faf3dfdffdca91731101d9d30fe3423"
++dependencies = [
++ "cc",
++]
++
+ [[package]]
+ name = "rusqlite"
+ version = "0.32.1"
+@@ -9614,10 +9652,13 @@ dependencies = [
+  "blitz-paint",
+  "blitz-traits",
+  "image",
++ "keyboard-types",
+  "lyon_tessellation",
+  "peniko",
+  "png 0.18.1",
++ "rquickjs",
+  "skrifa",
++ "smol_str",
+ ]
+ 
+ [[package]]
+diff --git a/packages/blitz-paint/src/layers.rs b/packages/blitz-paint/src/layers.rs
+index 17764ca..bcc1d37 100644
+--- a/packages/blitz-paint/src/layers.rs
++++ b/packages/blitz-paint/src/layers.rs
+@@ -3,7 +3,10 @@ use kurbo::{Affine, Shape};
+ use peniko::{BlendMode, Fill};
+ use std::{cell::Cell, sync::Arc};
+ 
+-const LAYER_LIMIT: u32 = 1024;
++/// webui-lab: no limit. The limit (1024, for Vello) made an element's painting depend on how many layers came
++/// before it in the frame (past it, shadows and clips were silently dropped), which retained painting can't reuse; the
++/// GPU painter applies clips per pixel and has no such limit.
++const LAYER_LIMIT: u32 = u32::MAX;
+ 
+ #[derive(Default)]
+ pub(crate) struct LayerManager {
+diff --git a/packages/blitz-paint/src/render.rs b/packages/blitz-paint/src/render.rs
+index a269b32..2ce526b 100644
+--- a/packages/blitz-paint/src/render.rs
++++ b/packages/blitz-paint/src/render.rs
+@@ -148,10 +148,13 @@ pub struct RetainedEntry {
+ 
+ /// What an element's recording was made for: the transform and cull rectangle it was painted under, its box, its
+ /// scroll offset (scrolling damages nothing), the scale.
+-fn retained_key(t: Affine, clip: Rect, node: &Node, scale: f64) -> [f64; 17] {
++fn retained_key(t: Affine, clip: Rect, node: &Node, scale: f64, inside: bool) -> [f64; 17] {
+     let c = t.as_coeffs();
+     let l = node.final_layout();
+     let so = node.scroll_offset();
++    // An element wholly inside the cull rectangle is painted the same whatever the rectangle: it isn't part of the key
++    // then (a scroll moving the rectangle reuses it).
++    let clip = if inside { Rect::ZERO } else { clip };
+     [c[0], c[1], c[2], c[3], c[4], c[5], clip.x0, clip.y0, clip.x1, clip.y1,
+         l.location.x as f64, l.location.y as f64, l.size.width as f64, l.size.height as f64, so.x, so.y, scale]
+ }
+@@ -738,7 +741,13 @@ impl<'dom, 'a> BlitzDomPainter<'dom, 'a> {
+                                     let off = Vec2::new(off.x * self.scale, off.y * self.scale);
+                                     scene.scroll_begin(node_id.as_u64(), off, cx.transform.transform_rect_bbox(clip.bounding_box()));
+                                     let m = margin * self.scale;
+-                                    let cull = Rect::new(child_clip_rect.x0 + off.x - m, child_clip_rect.y0 + off.y - m, child_clip_rect.x1 + off.x + m, child_clip_rect.y1 + off.y + m);
++                                    // The cull rectangle moves in steps of half the margin (grown by a step to still
++                                    // hold the margin): between steps it stays put, so the children's recordings are
++                                    // reused while scrolling (retained painting keys them by it).
++                                    let step = (m / 2.0).max(1.0);
++                                    let q = Vec2::new((off.x / step).floor() * step, (off.y / step).floor() * step);
++                                    let m = m + step;
++                                    let cull = Rect::new(child_clip_rect.x0 + q.x - m, child_clip_rect.y0 + q.y - m, child_clip_rect.x1 + q.x + m, child_clip_rect.y1 + q.y + m);
+                                     cx.draw_image(scene);
+                                     #[cfg(feature = "svg")]
+                                     cx.draw_svg(scene);
+@@ -808,7 +817,16 @@ impl<'dom, 'a> BlitzDomPainter<'dom, 'a> {
+         match &node.data {
+             NodeData::Element(_) | NodeData::AnonymousBlock(_) if self.retained.is_some() => {
+                 let r = self.retained.as_ref().unwrap();
+-                let key = retained_key(parent_style_transform, clip_rect, node, self.scale);
++                // Wholly inside the cull rectangle by the box Blitz culls with (its overflow and border box under its
++                // transform), with room for shadows and outlines.
++                let inside = {
++                    let l = node.final_layout();
++                    let border_box = Rect::new(0.0, 0.0, l.size.width as f64 * self.scale, l.size.height as f64 * self.scale);
++                    let screen = Affine::translate(Vec2::new(-self.initial_x, -self.initial_y)) * self.node_transform(node, parent_style_transform);
++                    let b = screen.transform_rect_bbox(node.scrollable_overflow().union(border_box)).inflate(64.0 * self.scale, 64.0 * self.scale);
++                    b.x0 >= clip_rect.x0 && b.y0 >= clip_rect.y0 && b.x1 <= clip_rect.x1 && b.y1 <= clip_rect.y1
++                };
++                let key = retained_key(parent_style_transform, clip_rect, node, self.scale, inside);
+                 // Unchanged since it was painted, and painted for the same place: its recording again.
+                 if !r.dirty_up.contains(&node_id) {
+                     if let Some(e) = r.cache.borrow_mut().get_mut(&node_id) {
+-- 
+2.50.1 (Apple Git-155)
+

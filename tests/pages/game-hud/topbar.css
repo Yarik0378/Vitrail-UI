@@ -1,0 +1,77 @@
+/* A strategy game's top bar (dark teal frame,
+   sea-green accent line, rings with ticks, glass buttons). Sizes are CSS px; the game scales the page with its HUD. */
+@font-face { font-family: GameSans; src: url(fonts/AlegreyaSans-Medium.ttf); font-weight: 500; }
+@font-face { font-family: GameSans; src: url(fonts/AlegreyaSans-Bold.ttf); font-weight: 700; }
+
+html, body { margin: 0; background: transparent; overflow: hidden; }
+body { position: relative; width: 100%; height: 140px; font: 700 16px/1 GameSans; color: #f6eedc;
+  /* Lining, even-width figures: the font's old-style ones made «0» read as «o» and «3» hang below the line. */
+  font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum" 1, "tnum" 1; }
+
+/* Before the first camp (the slow start) only the frame and the buttons show. */
+body:not(.founded) .res, body:not(.founded) .rings { display: none; }
+/* While a lot is edited the advisors and buttons step aside. */
+body.editing .rings, body.editing .btns { display: none; }
+
+.frame-blur { position: absolute; left: 0; top: 0; width: 100%; height: 80px;
+  clip-path: path('M0 0H1422V68H1236Q1220 68 1214 60Q1206 50 1188 50H262Q246 50 240 62Q232 76 214 76H0Z');
+  backdrop-filter: blur(3px) saturate(.9); }
+.frame { position: absolute; left: 0; top: 0; width: 100%; height: 80px; pointer-events: none; }
+
+/* Resources */
+.res { position: absolute; left: 306px; top: 0; height: 54px; display: flex; align-items: center; }
+.cell { position: relative; display: flex; align-items: center; gap: 5px; padding: 0 10px; height: 34px; border-radius: 6px; }
+.cell::before { content: ""; position: absolute; left: 0; top: 50%; height: 24px; margin-top: -12px; width: 1px;
+  background: rgba(0, 0, 0, .45); box-shadow: 1px 0 0 rgba(200, 230, 220, .16); }
+.cell.lead::before, .cell.off { display: none; }
+.cell:hover { background: rgba(255, 255, 255, .06); }
+.cell img { width: 24px; height: 24px; }
+.cap { color: #b9bea9; }
+.cell.full .cap, .cell.full .v { color: #ffb09a; }
+.cell i { font-style: normal; font-size: 15px; font-weight: 700; margin-left: 2px; }
+.up { color: #c2e57f; } .dn { color: #f08a70; } .z { color: #a39b8d; } .sc { color: #a6d8f0; }
+.v.debt { color: #f08a70; }
+
+/* Hover hints (the game's look: dark enamel, thin light edge) */
+.tip { display: none; position: absolute; top: 44px; left: 0; min-width: 160px; max-width: 320px; white-space: pre-line;
+  padding: 7px 10px; border-radius: 8px; background: rgba(18, 34, 30, .96); border: 1px solid #4e7068;
+  font: 500 13px/1.35 GameSans; color: #e6e2cf; box-shadow: 0 6px 14px rgba(0, 0, 0, .45); }
+.cell:hover .tip, .btn:hover .tip { display: block; }
+.btn .tip { left: auto; right: 0; top: 48px; text-align: right; }
+
+/* Advisors' rings */
+.rings { position: absolute; left: 16px; top: 8px; display: flex; gap: 8px; }
+.ring { position: relative; width: 60px; height: 60px; border-radius: 50%; --p: 0%; --ring: #8fb7aa;
+  background: radial-gradient(circle at 50% 32%, rgba(29, 52, 47, .85), rgba(15, 28, 26, .9) 68%);
+  box-shadow: inset 0 0 0 2px #110f0e, inset 0 0 0 3px #5b7d74, inset 0 3px 6px rgba(0, 0, 0, .7); }
+.ring::before { content: ""; position: absolute; inset: 3px; border-radius: 50%;
+  background: repeating-conic-gradient(from -3deg, rgba(214, 152, 96, .45) 0 2deg, transparent 2deg 30deg);
+  mask: radial-gradient(circle, transparent 24.5px, #000 25px, #000 27px, transparent 27.5px); }
+.ring:hover { box-shadow: inset 0 0 0 2px #110f0e, inset 0 0 0 3px #8fb7aa, inset 0 3px 6px rgba(0, 0, 0, .7), 0 0 10px rgba(143, 183, 170, .35); }
+.ring .p { position: absolute; inset: 3px; border-radius: 50%;
+  background: conic-gradient(var(--ring) 0 var(--p), transparent var(--p));
+  mask: radial-gradient(circle, transparent 22px, #000 22.5px, #000 24.5px, transparent 25px); }
+.ring img { position: absolute; left: 13px; top: 13px; width: 34px; height: 34px; }
+.ring .badge { display: none; position: absolute; right: -1px; top: -1px; width: 17px; height: 17px; transform: rotate(45deg);
+  background: linear-gradient(135deg, #a9c9bf, #5b7d74 55%, #2a4741); border-radius: 3px;
+  box-shadow: 0 0 0 1.5px #0c1816, 0 0 0 2.5px #5b7d74, 0 0 8px rgba(255, 170, 80, .55); }
+.ring .badge::after { content: "!"; position: absolute; inset: 0; transform: rotate(-45deg); display: flex;
+  align-items: center; justify-content: center; font: 800 12px/1 GameSans; color: #2a1608; }
+.ring.alert .badge { display: block; }
+.ring .cap { display: none; position: absolute; top: 66px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+  padding: 3px 8px; border-radius: 8px; background: rgba(18, 34, 30, .94); border: 1px solid #4e7068;
+  font: 700 14px/1 GameSans; color: #f6eedc; }
+.ring:hover .cap { display: block; }
+
+/* Menu buttons */
+.btns { position: absolute; right: 22px; top: 9px; display: flex; gap: 9px; }
+.btn { position: relative; width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 30%, rgba(32, 58, 53, .82), rgba(18, 34, 30, .88) 72%);
+  box-shadow: inset 0 0 0 1px #0d0c0b, inset 0 0 0 2px #5b7d74, inset 0 4px 6px rgba(0, 0, 0, .6), 0 2px 3px rgba(0, 0, 0, .5); }
+.btn::after { content: ""; position: absolute; left: 7px; right: 7px; top: 3px; height: 1px; background: rgba(255, 220, 180, .2); border-radius: 1px; }
+.btn:hover { background: radial-gradient(circle at 50% 30%, rgba(52, 88, 80, .9), rgba(26, 48, 42, .92) 72%); }
+.btn:active { background: radial-gradient(circle at 50% 30%, rgba(20, 38, 34, .95), rgba(12, 24, 21, .95) 72%); }
+.btn svg { width: 21px; height: 21px; fill: none; stroke: #f2dcb8; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* What takes a click shows the game's hand. */
+.btn, .ring, #cell-science { cursor: pointer; }

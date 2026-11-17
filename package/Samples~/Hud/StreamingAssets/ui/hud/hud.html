@@ -1,0 +1,14 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="hud.css"></head>
+<body>
+  <header class="bar">
+    <div class="res" data-bind-for="r:{{hud.resources}}">
+      <span class="icon" data-bind-style-background-color="{{r.color}}"></span>
+      <b data-bind-value="{{r.amount}}"></b>
+      <i data-bind-value="{{r.delta >= 0 ? '+' + r.delta : r.delta}}" data-bind-class-toggle="down:{{r.delta < 0}}"></i>
+      <span class="tip" data-bind-value="{{r.name}}: {{r.amount}} / {{r.cap}}"></span>
+    </div>
+    <div class="turn">Turn <b data-bind-value="{{hud.turn}}"></b></div>
+    <button data-action="end-turn">End turn</button>
+  </header>
+</body></html>

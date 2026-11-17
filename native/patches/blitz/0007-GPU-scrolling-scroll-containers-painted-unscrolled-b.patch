@@ -1,0 +1,74 @@
+From 3fd2eb3d58948ec0b9b3774bb02d443d68ee1beb Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Sun, 8 Nov 2026 22:52:01 +0200
+Subject: [PATCH 07/13] GPU scrolling: scroll containers painted unscrolled
+ between markers with a margin (gpu_scroll_margin)
+
+---
+ packages/blitz-dom/src/document.rs |  4 ++++
+ packages/blitz-paint/src/render.rs | 27 +++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+)
+
+diff --git a/packages/blitz-dom/src/document.rs b/packages/blitz-dom/src/document.rs
+index 1de1b08..f6aaa5f 100644
+--- a/packages/blitz-dom/src/document.rs
++++ b/packages/blitz-dom/src/document.rs
+@@ -377,6 +377,9 @@ pub struct BaseDocument {
+     pub(crate) has_active_animations: bool,
+     /// webui-lab: elements the embedder composites on its own (painted between composited markers, at full opacity).
+     pub composited: HashSet<NodeId>,
++    /// webui-lab: when set, scroll containers' content is painted unscrolled between scroll markers, with this much
++    /// extra content (CSS px) beyond each side of the scrollport, for the embedder to scroll on the GPU.
++    pub gpu_scroll_margin: Option<f64>,
+     /// Whether there is a `<canvas>` element in the DOM (so we should re-render every frame)
+     pub(crate) has_canvas: bool,
+     /// Whether there are subdocuments that are animating (so we should re-render every frame)
+@@ -565,6 +568,7 @@ impl BaseDocument {
+             mousedown_node_id: None,
+             has_active_animations: false,
+             composited: HashSet::new(),
++            gpu_scroll_margin: None,
+             subdoc_is_animating: false,
+             has_canvas: false,
+             sub_document_nodes: HashSet::new(),
+diff --git a/packages/blitz-paint/src/render.rs b/packages/blitz-paint/src/render.rs
+index b0d4f99..6157cdc 100644
+--- a/packages/blitz-paint/src/render.rs
++++ b/packages/blitz-paint/src/render.rs
+@@ -681,6 +681,33 @@ impl<'dom, 'a> BlitzDomPainter<'dom, 'a> {
+                             None,
+                             None,
+                             |scene| {
++                                // webui-lab: a scroll container's content painted unscrolled for the embedder to scroll
++                                // on the GPU: culled against the scrollport moved by the offset and grown by the margin,
++                                // between scroll markers.
++                                let gpu_scroll = self.dom.as_ref().gpu_scroll_margin.filter(|_| {
++                                    let b = styles.get_box();
++                                    !is_text_input && (matches!(b.overflow_y, Overflow::Auto | Overflow::Scroll) || matches!(b.overflow_x, Overflow::Auto | Overflow::Scroll))
++                                });
++                                if let Some(margin) = gpu_scroll {
++                                    let off = node.scroll_offset();
++                                    let off = Vec2::new(off.x * self.scale, off.y * self.scale);
++                                    scene.scroll_begin(node_id.as_u64(), off, cx.transform.transform_rect_bbox(clip.bounding_box()));
++                                    let m = margin * self.scale;
++                                    let cull = Rect::new(child_clip_rect.x0 + off.x - m, child_clip_rect.y0 + off.y - m, child_clip_rect.x1 + off.x + m, child_clip_rect.y1 + off.y + m);
++                                    cx.draw_image(scene);
++                                    #[cfg(feature = "svg")]
++                                    cx.draw_svg(scene);
++                                    #[cfg(feature = "custom-widget")]
++                                    cx.draw_custom_widget(scene);
++                                    cx.draw_sub_document(scene);
++                                    cx.draw_input(scene);
++                                    cx.draw_text_input_text(scene, content_position);
++                                    cx.draw_inline_layout(scene, content_position);
++                                    cx.draw_marker(scene, content_position);
++                                    cx.draw_children(scene, cx.transform, cull);
++                                    scene.scroll_end();
++                                    return;
++                                }
+                                 // Now that background has been drawn, offset pos and cx in order to draw our contents scrolled
+                                 let content_position = Point {
+                                     x: content_position.x - node.scroll_offset().x,
+-- 
+2.50.1 (Apple Git-155)
+

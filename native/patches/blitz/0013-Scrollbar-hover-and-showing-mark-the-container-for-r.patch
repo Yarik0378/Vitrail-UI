@@ -1,0 +1,37 @@
+From 4e11d0c5afe8e433586d7e8e19885f9e1eceb71c Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Mon, 9 Nov 2026 02:59:24 +0200
+Subject: [PATCH 13/13] Scrollbar hover and showing mark the container for
+ repainting (retained painting)
+
+---
+ packages/blitz-dom/src/document.rs | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/packages/blitz-dom/src/document.rs b/packages/blitz-dom/src/document.rs
+index f2c1c11..a6ed1fb 100644
+--- a/packages/blitz-dom/src/document.rs
++++ b/packages/blitz-dom/src/document.rs
+@@ -1979,6 +1979,8 @@ impl BaseDocument {
+     pub(crate) fn show_scrollbars(&mut self, node_id: NodeId) {
+         if cfg!(feature = "scrollbars") {
+             self.scrollbar_activity.insert(node_id, Instant::now());
++            // webui-lab: the thumbs show again (retained painting repaints the container).
++            self.paint_dirty.lock().unwrap().insert(node_id);
+         }
+     }
+ 
+@@ -2033,6 +2035,10 @@ impl BaseDocument {
+         // content under the overlay thumb) is unchanged.
+         let scrollbar_changed = hovered_scrollbar != self.hovered_scrollbar;
+         if scrollbar_changed {
++            // webui-lab: the thumbs' look changed without damage (retained painting).
++            for scrollbar in [self.hovered_scrollbar, hovered_scrollbar].into_iter().flatten() {
++                self.paint_dirty.lock().unwrap().insert(scrollbar.node_id);
++            }
+             // Entering a thumb restores full opacity mid-fade; leaving one
+             // restarts the fade-out delay.
+             for scrollbar in [self.hovered_scrollbar, hovered_scrollbar]
+-- 
+2.50.1 (Apple Git-155)
+

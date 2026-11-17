@@ -1,0 +1,31 @@
+From 7ebb8ca3b7455d91899e4895af64cde3a49e0f48 Mon Sep 17 00:00:00 2001
+From: Yaroslav Kostiuk <yaroslav0378@gmail.com>
+Date: Mon, 9 Nov 2026 00:51:56 +0200
+Subject: [PATCH 09/13] Form controls use Chrome's 13.333px font
+
+---
+ packages/blitz-dom/assets/default.css | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/packages/blitz-dom/assets/default.css b/packages/blitz-dom/assets/default.css
+index 2747653..6c569a6 100644
+--- a/packages/blitz-dom/assets/default.css
++++ b/packages/blitz-dom/assets/default.css
+@@ -86,6 +86,14 @@ button {
+     font-family: system-ui, sans-serif;
+ }
+ 
++/* Chrome's form controls use a 13.333px font (`font: -webkit-small-control`) rather than the page's. */
++input,
++select,
++button,
++textarea {
++    font-size: 13.333px;
++}
++
+ textarea {
+     font-family: monospace;
+ }
+-- 
+2.50.1 (Apple Git-155)
+

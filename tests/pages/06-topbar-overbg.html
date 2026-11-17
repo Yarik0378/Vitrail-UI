@@ -1,0 +1,117 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans+Condensed:wght@500;600&family=Alegreya+SC:wght@700&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:transparent}
+.scene{position:relative;width:1422px;height:118px;background:url(../unity/06-topbar-bg.png) 0 0/1422px 118px;margin-bottom:6px;overflow:hidden}
+.num{position:absolute;left:4px;bottom:2px;font:700 14px system-ui;color:#fff;text-shadow:0 1px 2px #000;z-index:9}
+.bar{position:absolute;left:0;right:0;top:0;height:54px;display:flex;align-items:center}
+.res{display:flex;align-items:center;margin-left:238px;font:600 15.5px/1 "Fira Sans Condensed",system-ui;color:#f6eedc}
+.cell{display:flex;align-items:center;gap:5px;padding:0 10px;position:relative}
+.cell img{width:24px;height:24px}
+.cell i{font-style:normal;font-size:14px}
+.dn{color:#f08a70}.up{color:#c2e57f}.sc{color:#a6d8f0}.z{color:#a39b8d}
+.rings{position:absolute;left:18px;top:6px;display:flex;gap:6px}
+.btns{position:absolute;right:22px;top:9px;display:flex;gap:9px}
+.btn svg{width:20px;height:20px;fill:none;stroke:#f3e8cf;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- 1: slate & copper hairline (calm, premium) ---------- */
+.s1 .bar{background:linear-gradient(#2b2d2f,#1f2123 60%,#1a1b1d);
+  box-shadow:0 1px 0 #6b4a32,0 2px 0 #0c0c0d,0 8px 18px rgba(0,0,0,.45)}
+.s1 .bar::before{content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.018) 0 90px,rgba(0,0,0,.03) 90px 180px)}
+.s1 .bar::after{content:"";position:absolute;left:0;right:0;bottom:4px;height:1px;background:linear-gradient(90deg,transparent,rgba(214,152,96,.55) 15%,rgba(214,152,96,.55) 85%,transparent)}
+.s1 .cell+.cell::before{content:"";position:absolute;left:0;top:50%;height:24px;margin-top:-12px;width:1px;background:rgba(0,0,0,.45);box-shadow:1px 0 0 rgba(200,230,220,.16)}
+.s1 .ring{position:relative;width:62px;height:62px;border-radius:50%;
+  background:radial-gradient(circle at 50% 35%,#34373a,#1b1c1e 70%);
+  box-shadow:0 0 0 2px #121314,0 0 0 3px #8a5d3c,0 4px 10px rgba(0,0,0,.55),inset 0 2px 3px rgba(255,255,255,.06)}
+.s1 .ring img{position:absolute;inset:0;margin:auto;width:34px;height:34px}
+.s1 .ring .p{position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(#5b7d74 0 var(--p),transparent var(--p));
+  -webkit-mask:radial-gradient(circle,transparent 30px,#000 30.5px,#000 33px,transparent 33.5px);mask:radial-gradient(circle,transparent 30px,#000 30.5px,#000 33px,transparent 33.5px)}
+.s1 .btn{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;position:relative;
+  background:radial-gradient(circle at 50% 30%,rgba(32,58,53,.82),rgba(18,34,30,.88) 72%);
+  box-shadow:inset 0 0 0 1px #0d0c0b,inset 0 0 0 2px #5b7d74,inset 0 4px 6px rgba(0,0,0,.6),0 2px 3px rgba(0,0,0,.5)}
+.s1 .btn::after{content:"";position:absolute;left:7px;right:7px;top:3px;height:1px;background:rgba(255,220,180,.2);border-radius:1px}
+.s1 .btn svg{stroke:#f2dcb8;width:21px;height:21px}
+
+
+/* ---------- ring variants on design 1 ---------- */
+.s1 .ring .badge{position:absolute;right:-1px;top:-1px;width:17px;height:17px;z-index:3;transform:rotate(45deg);
+  background:linear-gradient(135deg,#a9c9bf,#5b7d74 55%,#2a4741);border-radius:3px;
+  box-shadow:0 0 0 1.5px #0c1816,0 0 0 2.5px #5b7d74,0 0 8px rgba(255,170,80,.55)}
+.s1 .ring .badge::after{content:"!";position:absolute;inset:0;transform:rotate(-45deg);display:grid;place-items:center;
+  font:800 12px/1 system-ui;color:#2a1608;text-shadow:0 1px 0 rgba(255,230,190,.5)}
+/* A: a recessed copper-rimmed medallion with a groove for the progress and tick marks */
+.A .ring{width:66px;height:66px;
+  background:radial-gradient(circle at 50% 28%,#3a3d40 0,#25272a 55%,#1a1b1d 72%,#2e3033 73%,#151617 78%,#0e0f10 100%);
+  box-shadow:0 0 0 1px #0b0b0c,0 0 0 3px #7b5233,0 0 0 4px #c48a5c,0 0 0 5px #3b2717,0 6px 12px rgba(0,0,0,.55),inset 0 1px 1px rgba(255,255,255,.08)}
+.A .ring::before{content:"";position:absolute;inset:3px;border-radius:50%;
+  background:repeating-conic-gradient(from -3deg,rgba(214,152,96,.55) 0 2deg,transparent 2deg 30deg);
+  -webkit-mask:radial-gradient(circle,transparent 27px,#000 27.5px,#000 30px,transparent 30.5px);mask:radial-gradient(circle,transparent 27px,#000 27.5px,#000 30px,transparent 30.5px)}
+.A .ring .p{inset:3px;background:conic-gradient(#8fb7aa 0 var(--p),transparent var(--p));
+  filter:drop-shadow(0 0 3px rgba(255,170,90,.7));
+  -webkit-mask:radial-gradient(circle,transparent 24.5px,#000 25px,#000 27px,transparent 27.5px);mask:radial-gradient(circle,transparent 24.5px,#000 25px,#000 27px,transparent 27.5px)}
+/* B: rings hung from the bar on a copper bracket, faceted slate face */
+.B .rings{top:0;gap:10px}
+.B .ring{width:62px;height:62px;margin-top:10px;
+  background:conic-gradient(from 22.5deg,#3d4043 0 45deg,#34373a 45deg 90deg,#2a2c2f 90deg 135deg,#222427 135deg 180deg,#1e2023 180deg 225deg,#25272a 225deg 270deg,#2f3235 270deg 315deg,#393c3f 315deg 360deg);
+  box-shadow:0 0 0 2px #0e0f10,0 0 0 4px #9a6a44,0 0 0 5px #2d1d11,0 6px 12px rgba(0,0,0,.55)}
+.B .ring::before{content:"";position:absolute;left:50%;top:-14px;width:10px;height:12px;margin-left:-5px;
+  background:linear-gradient(90deg,#6d4729,#c08a5d 45%,#7d5232);clip-path:polygon(20% 0,80% 0,100% 100%,0 100%);box-shadow:0 0 0 1px #2d1d11}
+.B .ring::after{content:"";position:absolute;inset:9px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#2b2d30,#17181a 70%);box-shadow:inset 0 2px 4px #000,0 0 0 1px rgba(214,152,96,.35)}
+.B .ring img{z-index:2}
+.B .ring .p{inset:-5px;background:conic-gradient(#8fb7aa 0 var(--p),transparent var(--p));
+  -webkit-mask:radial-gradient(circle,transparent 34px,#000 34.5px,#000 36px,transparent 36.5px);mask:radial-gradient(circle,transparent 34px,#000 34.5px,#000 36px,transparent 36.5px)}
+/* C: the bar itself swells down on the left into one piece that holds the rings (one outline, drawn as one shape) */
+.C .bar{background:none;box-shadow:none}
+.C .bar::before,.C .bar::after{display:none}
+.C .shape{position:absolute;left:0;top:0;width:100%;height:80px;pointer-events:none}
+.C .rings{left:16px;top:8px;gap:8px}
+.C .ring{width:60px;height:60px;
+  background:radial-gradient(circle at 50% 32%,rgba(29,52,47,.85),rgba(15,28,26,.9) 68%);
+  box-shadow:inset 0 0 0 2px #110f0e,inset 0 0 0 3px #5b7d74,inset 0 3px 6px rgba(0,0,0,.7)}
+.C .ring::before{content:"";position:absolute;inset:3px;border-radius:50%;
+  background:repeating-conic-gradient(from -3deg,rgba(214,152,96,.45) 0 2deg,transparent 2deg 30deg);
+  -webkit-mask:radial-gradient(circle,transparent 24.5px,#000 25px,#000 27px,transparent 27.5px);mask:radial-gradient(circle,transparent 24.5px,#000 25px,#000 27px,transparent 27.5px)}
+.C .ring .p{inset:3px;background:conic-gradient(#8fb7aa 0 var(--p),transparent var(--p));filter:drop-shadow(0 0 3px rgba(255,170,90,.6));
+  -webkit-mask:radial-gradient(circle,transparent 22px,#000 22.5px,#000 24.5px,transparent 25px);mask:radial-gradient(circle,transparent 22px,#000 22.5px,#000 24.5px,transparent 25px)}
+</style></head><body>
+
+<div class="scene s1 C"><div class="blur" style="position:absolute;left:0;top:0;width:1422px;height:80px;clip-path:path('M0 0H1422V68H1236Q1220 68 1214 60Q1206 50 1188 50H262Q246 50 240 62Q232 76 214 76H0Z');backdrop-filter:blur(3px) saturate(.9);-webkit-backdrop-filter:blur(3px) saturate(.9)"></div><svg class="shape" viewBox="0 0 1422 80" preserveAspectRatio="none"><defs>
+<linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f3a35"/><stop offset=".1" stop-color="#173029"/><stop offset=".6" stop-color="#112420"/><stop offset="1" stop-color="#0c1b18"/></linearGradient>
+<linearGradient id="cu" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2c4a43"/><stop offset=".18" stop-color="#6f9488"/><stop offset=".5" stop-color="#4e7068"/><stop offset=".82" stop-color="#6f9488"/><stop offset="1" stop-color="#2c4a43"/></linearGradient>
+<radialGradient id="rv" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#a9c9bf"/><stop offset=".55" stop-color="#56786f"/><stop offset="1" stop-color="#1a2f2a"/></radialGradient>
+<pattern id="tx" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 6L6 0" stroke="#fff" stroke-opacity=".02" stroke-width="1"/></pattern>
+<filter id="sh" x="-5%" y="-20%" width="110%" height="160%"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity=".5"/></filter></defs>
+<path filter="url(#sh)" fill-opacity=".72" d="M0 0H1422V68H1236Q1220 68 1214 60Q1206 50 1188 50H262Q246 50 240 62Q232 76 214 76H0Z" fill="url(#g)"/>
+<path d="M0 1.5H1422" stroke="#fff" stroke-opacity=".08" stroke-width="1"/>
+<path d="M0 70H212Q228 70 235 58Q241 46 258 46H1184Q1202 46 1209 56Q1215 64 1232 64H1422" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="1"/>
+<path d="M0 71H212Q228 71 235 59Q241 47 258 47H1184Q1202 47 1209 57Q1215 65 1232 65H1422" fill="none" stroke="#fff" stroke-opacity=".05" stroke-width="1"/>
+<path d="M0 74H214Q232 74 238 62Q245 49 262 49H1188Q1206 49 1213 59Q1219 67 1236 67H1422" fill="none" stroke="url(#cu)" stroke-width="1.2" stroke-opacity=".8"/>
+<path d="M0 76H214Q232 76 240 62Q246 50 262 50H1188Q1206 50 1214 60Q1220 68 1236 68H1422" fill="none" stroke="#0c0b0a" stroke-width="2"/>
+</svg>
+  <div class="bar"><div class="res">
+    <div class="cell"><img src="img/water.png">30/40 <i class="dn">−12</i></div>
+    <div class="cell"><img src="img/food.png">30/46 <i class="dn">−16</i></div>
+    <div class="cell"><img src="img/wood.png">30/52 <i class="dn">−22</i></div>
+    <div class="cell"><img src="img/stone.png">30/30 <i class="z">0</i></div>
+    <div class="cell"><img src="img/planks.png">30/24 <i class="up">+2</i></div>
+    <div class="cell"><img src="img/iron.png">30/8 <i class="z">0</i></div>
+    <div class="cell"><img src="img/horses.png">30/3 <i class="z">0</i></div>
+    <div class="cell"><img src="img/gold.png">0 <i class="up">+3</i></div>
+    <div class="cell"><img src="img/science.png">20 <i class="sc">+26</i></div>
+    <div class="cell"><img src="img/people.png">24</div>
+  </div></div>
+  <div class="rings">
+    <div class="ring"><div class="p" style="--p:35%"></div><img src="img/science.png"></div>
+    <div class="ring"><div class="badge"></div><img src="img/units.png"></div>
+    <div class="ring"><div class="p" style="--p:62%"></div><img src="img/food.png"></div>
+  </div>
+  <div class="btns">
+    <div class="btn"><svg viewBox="0 0 24 24"><path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z"/></svg></div>
+    <div class="btn"><svg viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14"/></svg></div>
+    <div class="btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></div>
+    <div class="btn"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></div>
+  </div>
+</div>
+
+</body></html>
