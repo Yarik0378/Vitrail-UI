@@ -3,9 +3,11 @@
 <img src="media/hero.jpg" alt="Vitrail UI: HTML, CSS and JavaScript game interfaces painted by your game's GPU" width="100%">
 
 ![Unity 6](https://img.shields.io/badge/Unity-6%20URP-222?logo=unity)
-![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-3a6ea5)
+![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows-3a6ea5)
 ![Version](https://img.shields.io/badge/version-0.1.0-c08a3e)
-![License](https://img.shields.io/badge/license-MIT%20%2B%20Commons%20Clause-777)
+![Free for commercial games](https://img.shields.io/badge/free-commercial%20games%20too-4c8a3e)
+
+**HTML, CSS and JavaScript UI for Unity games, rendered by your game's GPU. No browser, no web view.**
 
 [Getting started](docs/getting-started.md) · [CSS support](docs/css-support.md) · [Performance](docs/performance.md) · [Architecture](docs/architecture.md)
 
@@ -16,6 +18,10 @@
 Write your menus, HUDs and inventories the way the web is written: HTML for structure, CSS for looks, JavaScript or C#
 for behaviour. Vitrail UI lays them out with Firefox's CSS engine and paints them with its own GPU renderer inside your
 frame, so a hover or a changed number costs a fraction of a millisecond.
+
+It is an open alternative to Unity UI Toolkit, uGUI and embedded browsers such as Coherent Gameface or Chromium-based
+web views: real CSS (flexbox, grid, gradients, shadows, `backdrop-filter` glass), but no browser process, no extra
+memory for one, and no per-title fees. Free to use in commercial games.
 
 <img src="media/showcase.jpg" alt="A strategy game HUD made with Vitrail UI: a resource bar, a build menu with a tooltip, a unit panel and a turn dial, all glass panels over the game world" width="100%">
 
@@ -99,7 +105,9 @@ Details and method: [docs/performance.md](docs/performance.md).
 
 ## Quick start
 
-1. Install the package (Unity 6, URP, Input System).
+1. **Window › Package Manager › + › Add package from git URL:**
+   `https://github.com/Yarik0378/Vitrail-UI.git?path=/package`
+   (Unity 6 with URP and the Input System; libraries for macOS and Windows are included.)
 2. Put a page under `Assets/StreamingAssets/ui/menu.html`.
 3. **GameObject › UI › Vitrail UI Screen**, pick the page, press Play.
 
@@ -141,10 +149,24 @@ panel in the world.
 - [ ] `<select multiple>`, 3D transforms, network URLs
 - [ ] Godot and Unreal on the same core
 
+## Status
+
+Version 0.1.0, an early release: everything above works and is covered by tests, but expect rough edges and API
+changes before 1.0. Linux builds come from CI and the source (`native/build.sh`); a prebuilt Linux library will
+follow.
+
+Bug reports, test pages that render differently from Chrome, and pull requests are welcome in
+[Issues](https://github.com/Yarik0378/Vitrail-UI/issues).
+
 ## License
 
-Free, including for games you sell. Use Vitrail UI in any free or paid game or application, change it, improve it
-and share it; no fee or royalty. The one thing not allowed is selling Vitrail UI itself (or a changed copy, or an
-asset or library built mainly from it). Terms: [MIT with the Commons Clause](LICENSE.md). © 2026 Yaroslav Kostiuk.
+Free, including for games you sell.
+
+- **Yes:** use Vitrail UI in any free or paid game or application and sell it on Steam, consoles, mobile stores or
+  anywhere else. No fee, no royalty, no permission needed.
+- **Yes:** change it, improve it and share it for free.
+- **No:** sell Vitrail UI itself, a changed copy of it, or an asset or library built mainly from it.
+
+Terms: [MIT with the Commons Clause](LICENSE.md). © 2026 Yaroslav Kostiuk.
 
 Third-party components keep their own licenses: [Third Party Notices](package/Third%20Party%20Notices.md).
