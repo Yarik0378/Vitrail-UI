@@ -6,6 +6,7 @@
 ![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows-3a6ea5)
 ![Version](https://img.shields.io/badge/version-0.1.0-c08a3e)
 ![Free for commercial games](https://img.shields.io/badge/free-commercial%20games%20too-4c8a3e)
+[![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-support-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/yaroslavkostiuk)
 
 **HTML, CSS and JavaScript UI for Unity games, rendered by your game's GPU. No browser, no web view.**
 
@@ -157,6 +158,9 @@ follow.
 
 Bug reports, test pages that render differently from Chrome, and pull requests are welcome in
 [Issues](https://github.com/Yarik0378/Vitrail-UI/issues).
+
+If Vitrail UI saves you time, you can support its development on
+[Ko-fi](https://ko-fi.com/yaroslavkostiuk). It helps keep it free.
 
 ## License
 
