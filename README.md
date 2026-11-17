@@ -29,7 +29,7 @@ Write your menus, HUDs and inventories the way the web is written: HTML for stru
 for behaviour. Vitrail UI lays them out with Firefox's CSS engine and paints them with its own GPU renderer inside your
 frame, so a hover or a changed number costs a fraction of a millisecond.
 
-It is an open alternative to Unity UI Toolkit, uGUI and embedded browsers such as Coherent Gameface or Chromium-based
+It is a free alternative to Unity UI Toolkit, uGUI and embedded browsers such as Coherent Gameface or Chromium-based
 web views: real CSS (flexbox, grid, gradients, shadows, `backdrop-filter` glass), but no browser process, no extra
 memory for one, and no per-title fees. Free to use in commercial games.
 
