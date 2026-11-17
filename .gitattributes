@@ -1,0 +1,5 @@
+# Language statistics: test pages, the lab project and README sources are not the library.
+tests/** linguist-vendored
+unity/** linguist-vendored
+media/** linguist-documentation
+docs/** linguist-documentation
