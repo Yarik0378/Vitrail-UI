@@ -8,6 +8,15 @@
 ![Free for commercial games](https://img.shields.io/badge/free-commercial%20games%20too-4c8a3e)
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-Ko--fi-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/yaroslavkostiuk)
 
+[![CI](https://img.shields.io/github/actions/workflow/status/Yarik0378/Vitrail-UI/ci.yml?label=CI&logo=github)](https://github.com/Yarik0378/Vitrail-UI/actions/workflows/ci.yml)
+![Rust](https://img.shields.io/badge/Rust-2024-b7410e?logo=rust)
+![C#](https://img.shields.io/badge/C%23-9-512bd4?logo=dotnet)
+![Stylo](https://img.shields.io/badge/CSS-Stylo%20%28Firefox%29-e66000?logo=firefoxbrowser&logoColor=white)
+![Layout](https://img.shields.io/badge/layout-Blitz%20%C2%B7%20Taffy%20%C2%B7%20Parley-2f6f5e)
+![QuickJS](https://img.shields.io/badge/JavaScript-QuickJS-c9a227?logo=javascript&logoColor=white)
+[![License](https://img.shields.io/badge/license-MIT%20%2B%20Commons%20Clause-777)](LICENSE.md)
+![Made in Ukraine](https://img.shields.io/badge/made%20in-Ukraine-ffd500?labelColor=0057b7)
+
 **HTML, CSS and JavaScript UI for Unity games, rendered by your game's GPU. No browser, no web view.**
 
 [Getting started](docs/getting-started.md) · [CSS support](docs/css-support.md) · [Performance](docs/performance.md) · [Architecture](docs/architecture.md)
